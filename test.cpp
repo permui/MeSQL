@@ -1,9 +1,10 @@
 #include <bits/stdc++.h>
-#include "interpreter/command.hpp"
+#include "interpreter/interpreter.hpp"
 using namespace std;
+using namespace MeInt;
 
 int main() {
-    MeInt::DropIndexStatement d("idx");
-    d.print();
+	Interpreter a;
+	a.parse();
     return 0;
 }

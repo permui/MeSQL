@@ -26,7 +26,9 @@ namespace MeInt {
 
     // implement class CreateTableStatement
     CreateTableStatement::CreateTableStatement(const string &_table_name,const vector<TableColumnDef> &_cols,const string &_primary_key) :
-        table_name(_table_name),cols(_cols),primary_key(_primary_key) {}
+        table_name(_table_name),cols(_cols),primary_key(_primary_key) {
+		give_order();
+	}
 
     string CreateTableStatement::str() const {
         stringstream ss;
@@ -40,7 +42,7 @@ namespace MeInt {
     void CreateTableStatement::print() const {
         *printer << str() << endl;
     }
-    void CreateTableStatement::execute() {
+    void CreateTableStatement::execute() { // do a lot of check
         // TODO
         // currently just print
         print();

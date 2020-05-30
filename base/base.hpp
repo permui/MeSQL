@@ -15,13 +15,13 @@ using namespace std;
 
 namespace MeType {
     enum class DataType {
-        INT,FLOAT,CHAR
+        INT,FLOAT,CHAR,UNKNOWN
     };
     enum class CompareOp {
         EQ,NE,L,G,LE,GE
     };
-    typedef unsigned char char_size_t;
-    typedef unsigned char col_num_t;
+    typedef int char_size_t;
+    typedef int col_num_t;
 
     string DataTypeStr(DataType dtype);
     string CompareOpStr(CompareOp op);
@@ -38,6 +38,7 @@ namespace MeInfo {
         bool is_unique;
         bool is_primary_key;
 
+		TableColumnSpec();
         TableColumnSpec(DataType _data_type,char_size_t _len,bool _is_unique,bool _is_primary_key);
         string str() const;
     };
@@ -49,6 +50,7 @@ namespace MeInfo {
         string col_name;
         TableColumnSpec col_spec;
 
+		TableColumnDef();
         TableColumnDef(col_num_t _ord,const string &_col_name,const TableColumnSpec &_col_spec);
         string str() const;
     };

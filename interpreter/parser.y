@@ -20,14 +20,13 @@
     #include <sstream>
     #include <iostream>
     #include "command.hpp"
-    #include "base.hpp"
+    #include "../base/base.hpp"
 
+	namespace MeInt {
+		class Scanner;
+		class Interpreter;
+	}
     using namespace std;
-
-    namespace MeInt {
-        class Scanner;
-        class Interpreter;
-    }
 }
 
 %code provides
@@ -37,9 +36,9 @@
 
 %code top
 {
-    #include "scanner.h"
+    #include "scanner.hpp"
     #include "parser.hpp"
-    #include "interpreter.h"
+    #include "interpreter.hpp"
     #include "location.hh"
     
     static MeInt::Parser::symbol_type yylex(MeInt::Scanner &scanner) {
@@ -60,6 +59,7 @@
 
 %define api.token.prefix {TOKEN_}
 
+%token END
 %token SEMICOLON ";"
 %token CREATE "create"
 %token TABLE "table"
@@ -69,6 +69,7 @@
 %token INT "int"
 %token FLOAT "float"
 %token CHAR "char"
+%token QUIT "quit"
 %token <std::string> NUMBER
 %token <std::string> IDENTIFIER "identifier"
 %token LPAREN "("
@@ -78,6 +79,12 @@
 
 %type <Statement*> statement;
 %type <CreateTableStatement*> create_table_statement;
+%type <std::vector<TableColumnDef> > create_table_col_defs;
+%type <TableColumnDef> create_table_col_def;
+%type <TableColumnSpec> create_table_col_spec;
+%type <TableColumnSpec> create_table_col_type;
+%type <std::string> create_table_pk_def;
+/* commented statement
 %type <DropTableStatement*> drop_table_statement;
 %type <CreateIndexStatement*> create_index_statement;
 %type <DropIndexStatement*> drop_index_statement;
@@ -85,10 +92,7 @@
 %type <InsertStatement*> insert_statement;
 %type <DeleteStatement*> delete_statement;
 %type <ExecfileStatement*> execfile_statement;
-%type <std::vector<TableColumnDef> > create_table_col_defs;
-%type <TableColumnDef> create_table_col_def;
-%type <TableColumnSpec> create_table_col_spec;
-%type <TableColumnSpec> create_table_col_type;
+*/
 
 %start program
 
@@ -104,14 +108,16 @@ program :
         {
             Statement *stat = $2;
             stat->execute();
-            string res = stat->result_str(); // they are virtual function
-            *driver.os << res << endl << endl;
+            // string res = stat->result_str(); // they are virtual function
+            // *driver.os << res << endl << endl;
+			delete stat;
             driver.prompt();
         }
     ;
 
 statement:
     create_table_statement { $$ = dynamic_cast<Statement*>($1); }
+	/* commented statement
     | drop_table_statement { $$ = dynamic_cast<Statement*>($1); }
     | create_index_statement { $$ = dynamic_cast<Statement*>($1); }
     | drop_index_statement { $$ = dynamic_cast<Statement*>($1); }
@@ -119,6 +125,7 @@ statement:
     | insert_statement { $$ = dynamic_cast<Statement*>($1); }
     | delete_statement { $$ = dynamic_cast<Statement*>($1); }
     | execfile_statement { $$ = dynamic_cast<Statement*>($1); }
+	*/
     ;
 
 create_table_statement:
@@ -128,7 +135,6 @@ create_table_statement:
             const vector<TableColumnDef> &cols = $5; // create_table_col_defs
             const string &primary_key = $7; // create_table_pk_def
             $$ = new CreateTableStatement(table_name,cols,primary_key);
-            $$->give_order();
         }
 
 create_table_col_defs:
@@ -138,6 +144,7 @@ create_table_col_defs:
         }
     | create_table_col_defs "," create_table_col_def
         {
+			$$.swap($1);
             $$.push_back($3);
         }
     ;
@@ -179,12 +186,19 @@ create_table_col_type:
             if (err) {
                 stringstream ss;
                 ss << "invalid char() length " << num;
-                error(driver.location(),ss.str());
+                error(location(),ss.str());
             } else {
                 $$ = TableColumnSpec(DataType::CHAR,static_cast<char_size_t>(tmp),false,false);
             }
         }
     ;
+
+create_table_pk_def:
+	"primary" "key" "(" IDENTIFIER ")"
+		{
+			$$ = $4;
+		}
+	;
 
 %%
 

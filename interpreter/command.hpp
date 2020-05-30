@@ -34,8 +34,10 @@ namespace MeInt {
         virtual string str() const = 0;
         virtual void print() const = 0;
         virtual void execute() = 0; // execute statement and store result inside the class
+		/*
         #error result_str() not implemented
         virtual string result_str() = 0;
+		*/
     };
 
     class CreateTableStatement : public Statement {

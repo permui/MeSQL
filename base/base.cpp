@@ -1,6 +1,7 @@
 #include <string>
 #include <sstream>
 #include <iomanip>
+#include <iostream>
 #include <vector>
 #include "base.hpp"
 
@@ -13,6 +14,7 @@ namespace MeType {
             case DataType::INT : return "INT";
             case DataType::FLOAT : return "FLOAT";
             case DataType::CHAR : return "CHAR";
+			case DataType::UNKNOWN : return "UNKNOWN";
         }
         return "UNDEFINED DATATYPE";
     }
@@ -35,6 +37,7 @@ namespace MeInfo {
     using namespace MeType;
 
     // implement class TableColumnSpec
+	TableColumnSpec::TableColumnSpec() : data_type(DataType::UNKNOWN),len(0),is_unique(false),is_primary_key(false) {}
     TableColumnSpec::TableColumnSpec(DataType _data_type,char_size_t _len,bool _is_unique,bool _is_primary_key) :
             data_type(_data_type),len(_len),is_unique(_is_unique),is_primary_key(_is_primary_key) {}
 
@@ -43,6 +46,7 @@ namespace MeInfo {
     }
 
     // implement class TableColumnDef
+	TableColumnDef::TableColumnDef() : ord(0),col_name(),col_spec() {}
     TableColumnDef::TableColumnDef(col_num_t _ord,const string &_col_name,const TableColumnSpec &_col_spec) :
             ord(_ord),col_name(_col_name),col_spec(_col_spec) {}
 
