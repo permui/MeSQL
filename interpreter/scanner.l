@@ -32,6 +32,8 @@
 
 ;			{ return MeInt::Parser::make_SEMICOLON(MeInt::location()); }
 
+*			{ return MeInt::Parser::make_STAR(MeInt::location()); }
+
 create		{ return MeInt::Parser::make_CREATE(MeInt::location()); }
 
 table		{ return MeInt::Parser::make_TABLE(MeInt::location()); }
@@ -41,6 +43,14 @@ unique 		{ return MeInt::Parser::make_UNIQUE(MeInt::location()); }
 primary		{ return MeInt::Parser::make_PRIMARY(MeInt::location()); }
 
 key 		{ return MeInt::Parser::make_KEY(MeInt::location()); }
+
+drop		{ return MeInt::Parser::make_DROP(MeInt::location()); }
+
+index		{ return MeInt::Parser::make_INDEX(MeInt::location()); }
+
+on			{ return MeInt::Parser::make_ON(MeInt::location()); }
+
+and			{ return MeInt::Parser::make_AND(MeInt::location()); }
 
 int 		{ return MeInt::Parser::make_INT(MeInt::location()); }
 

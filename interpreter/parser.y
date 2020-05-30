@@ -19,6 +19,7 @@
     #include <string>
     #include <sstream>
     #include <iostream>
+	#include <climits>
     #include "command.hpp"
     #include "../base/base.hpp"
 
@@ -62,11 +63,19 @@
 %token END
 %token <char> INVALID_CHAR "invalid character"
 %token SEMICOLON ";"
+%token STAR "*"
 %token CREATE "create"
 %token TABLE "table"
 %token UNIQUE "unique"
 %token PRIMARY "primary"
 %token KEY "key"
+%token DROP "drop"
+%token INDEX "index"
+%token SELECT "select"
+%token FROM "from"
+%token WHERE "where"
+%token ON "on"
+%token AND "and"
 %token INT "int"
 %token FLOAT "float"
 %token CHAR "char"
@@ -79,21 +88,31 @@
 
 
 %type <Statement*> statement;
+
 %type <CreateTableStatement*> create_table_statement;
 %type <std::vector<TableColumnDef> > create_table_col_defs;
 %type <TableColumnDef> create_table_col_def;
 %type <TableColumnSpec> create_table_col_spec;
 %type <TableColumnSpec> create_table_col_type;
 %type <std::string> create_table_pk_def;
-/* commented statement
+
 %type <DropTableStatement*> drop_table_statement;
+
 %type <CreateIndexStatement*> create_index_statement;
+
 %type <DropIndexStatement*> drop_index_statement;
+
 %type <SelectStatement*> select_statement;
+%type <std::string> select_proj_col;
+%type <std::vector<string> > select_proj_cols;
+%type <WhereCond> where_condition;
+%type <WhereCondItem> where_condition_item;
+%type <Literal> literal;
+
+
 %type <InsertStatement*> insert_statement;
 %type <DeleteStatement*> delete_statement;
 %type <ExecfileStatement*> execfile_statement;
-*/
 
 %%
 
@@ -126,16 +145,14 @@ program :
     ;
 
 statement:
-    create_table_statement { $$ = dynamic_cast<Statement*>($1); }
-	/* commented statement
-    | drop_table_statement { $$ = dynamic_cast<Statement*>($1); }
-    | create_index_statement { $$ = dynamic_cast<Statement*>($1); }
-    | drop_index_statement { $$ = dynamic_cast<Statement*>($1); }
+    create_table_statement { $$ = dynamic_cast<Statement*>($1); } // written
+    | drop_table_statement { $$ = dynamic_cast<Statement*>($1); } // written
+    | create_index_statement { $$ = dynamic_cast<Statement*>($1); } // written
+    | drop_index_statement { $$ = dynamic_cast<Statement*>($1); } // written
     | select_statement { $$ = dynamic_cast<Statement*>($1); }
     | insert_statement { $$ = dynamic_cast<Statement*>($1); }
     | delete_statement { $$ = dynamic_cast<Statement*>($1); }
     | execfile_statement { $$ = dynamic_cast<Statement*>($1); }
-	*/
     ;
 
 create_table_statement:
@@ -209,6 +226,82 @@ create_table_pk_def:
 			$$ = $4;
 		}
 	;
+
+drop_table_statement:
+	"drop" "table" IDENTIFIER
+		{
+			$$ = new DropTableStatement($3);
+		}
+	;
+
+create_index_statement:
+	"create" "index" IDENTIFIER "on" IDENTIFIER "(" IDENTIFIER ")"
+		{
+			$$ = new CreateIndexStatement($3,$5,$7);
+		}
+	;
+
+drop_index_statement:
+	"drop" "index" IDENTIFIER
+		{
+			$$ = new DropIndexStatement($3);
+		}
+	;
+
+select_statement:
+	"select" select_proj_cols "from" IDENTIFIER
+		{
+			$$ = new SelectStatement($4,$2,WhereCond());
+		}
+	| "select" select_proj_cols "from" IDENTIFIER
+	  "where" where_condition
+		{
+			$$ = new SelectStatement($4,$2,$6);
+		}
+	;
+
+select_proj_col:
+	"*" { $$ = string("*"); }
+	| IDENTIFIER { $$ = $1; }
+	;
+
+select_proj_cols:
+	select_proj_col { $$ = vector<string>{$1}; }
+	| select_proj_cols "," select_proj_col
+		{
+			$$.swap($1);
+			$$.push_back($3);
+		}
+	;
+
+where_condition:
+	where_condition_item
+		{
+			$$.items.push_back($1);
+		}
+	| where_condition "and" where_condition_item
+		{
+			$$.swap($1);
+			$$.push_back($3);
+		}
+	;
+
+where_condition_item:
+	IDENTIFIER compare_op literal
+		{
+			$$ = WhereCondItem($1,$2,$3);
+		}
+	;
+
+literal: // we don't check number size for now
+	NUMBER
+		{
+			stringstream ss($1)"
+			int x;
+			ss >> x;
+			if (ss.fail()) MyError("int number '" + $1 + "' out of range");
+			else $$ = x;
+		}
 
 %%
 
