@@ -60,6 +60,7 @@
 %define api.token.prefix {TOKEN_}
 
 %token END
+%token <char> INVALID_CHAR "invalid character"
 %token SEMICOLON ";"
 %token CREATE "create"
 %token TABLE "table"
@@ -94,15 +95,15 @@
 %type <ExecfileStatement*> execfile_statement;
 */
 
-%start program
-
 %%
 
 program : 
         {
+			/*
             *driver.os << greet_str;
             driver.prompt();
             driver.clear();
+			*/
         }
     | program statement ";"
         {
@@ -111,8 +112,17 @@ program :
             // string res = stat->result_str(); // they are virtual function
             // *driver.os << res << endl << endl;
 			delete stat;
-            driver.prompt();
+            //driver.prompt();
         }
+	| program END 
+		{
+			return 0;
+		}
+	| program INVALID_CHAR
+		{
+			cout << "invalid char '" << $2 <<"'" << endl;
+			return 0;
+		}
     ;
 
 statement:

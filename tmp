@@ -1,0 +1,3 @@
+create table tab(x int,primary key(x));create
+table A(y int,primary key(hh))
+;

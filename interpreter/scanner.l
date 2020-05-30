@@ -52,7 +52,7 @@ quit		{ return MeInt::Parser::make_QUIT(MeInt::location()); }
 		 
 [0-9]+		{ return MeInt::Parser::make_NUMBER(yytext,MeInt::location()); }
 
-[a-z_][a-z0-9_]*	{ return MeInt::Parser::make_IDENTIFIER(yytext,MeInt::location()); }
+[a-zA-Z_][a-zA-Z0-9_]*	{ return MeInt::Parser::make_IDENTIFIER(yytext,MeInt::location()); }
 
 \(			{ return MeInt::Parser::make_LPAREN(MeInt::location()); }
 
@@ -63,9 +63,7 @@ quit		{ return MeInt::Parser::make_QUIT(MeInt::location()); }
 [\n\t ]		{ }
 
 .			{ 
-				stringstream ss;
-				ss << "invalid character '" << *yytext << "'";
-				exit(0);
+				return MeInt::Parser::make_INVALID_CHAR(*yytext,MeInt::location()); 
 			}
             
 <<EOF>>     { return yyterminate(); }
