@@ -66,6 +66,11 @@ quit		{ return MeInt::Parser::make_QUIT(MeInt::location()); }
 
 "values"	{ return MeInt::Parser::make_VALUES(MeInt::location()); }
 
+"delete"	{ return MeInt::Parser::make_DELETE(MeInt::location()); }
+
+"quit"		{ return MeInt::Parser::make_QUIT(MeInt::location()); }
+
+\"[^\s"]+\"	{ return MeInt::Parser::make_FILENAME(yytext,MeInt::location()); }
 		 
 \d+		{ return MeInt::Parser::make_NUMBER(yytext,MeInt::location()); }
 

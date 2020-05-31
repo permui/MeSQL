@@ -14,21 +14,20 @@ int main() {
 	bool started = false;
 	while (true) {
 		char c = cin.get();
-		if (cin.eof()) {
-			cout << bye_str << endl;
-			break;
-		}
+		if (cin.eof()) break;
 		if (started || !isspace(c)) {
 			started = true;
 			ss << c;
 			if (c==';') {
 				a.clear();
-				a.parse();
+				int res = a.parse();
 				started = false;
 				ss.str(string());
+				if (res == -1) break; // -1 means got a "quit;" statement
 			}
 		}
 		if (c=='\n') cout << (started ? prompt_str_2 : prompt_str_1);
 	}
+	cout << bye_str << endl;
 	return 0;
 }

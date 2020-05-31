@@ -87,10 +87,13 @@
 %token INSERT "insert"
 %token INTO "into"
 %token VALUES "values"
+$token DELETE "delete"
+%token QUIT "quit"
 %token <std::string> NUMBER
 %token <std::string> FRACTION
 %token <std::string> STRING_LIT
 %token <std::string> IDENTIFIER "identifier"
+%token <std::string> FILENAME
 %token EQ "="
 %token NE "<>"
 %token LESS "<"
@@ -152,6 +155,10 @@ program :
 			delete stat;
             //driver.prompt();
         }
+	| program "quit" ";"
+		{
+			return -1;
+		}
 	| program END 
 		{
 			return 0;
@@ -391,6 +398,31 @@ insert_tuple_content:
 		}
 	;
 
+delete_statement:
+	"delete" "from" IDENTIFIER
+		{
+			$$ = new DeleteStatement($3,WhereCond());
+		}
+	| "delete" "from" IDENTIFIER "where" where_condition
+		{
+			$$ = new DeleteStatement($3,$5);
+		}
+	;
+
+execfile_statement:
+	"execfile" FILENAME
+		{
+			const string &str = $2;
+			size_t len = str.length();
+			if (len<2 || str.front()!='"' || str.back()!='"') {
+				MyError("invalid file name " + str);
+				ERROR_RETURN;
+			} else {
+				string tmp = str.substr(1,len-2);
+				$$ = new ExecfileStatement(tmp);
+			}
+		}
+	;
 
 
 %%

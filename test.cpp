@@ -4,7 +4,6 @@ using namespace std;
 using namespace MeInt;
 
 int main() {
-	Interpreter a;
-	a.parse();
+	string s;
     return 0;
 }
