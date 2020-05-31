@@ -33,6 +33,10 @@
 %code provides
 {
     const char greet_str[] = "MeSQL shell\n\n";
+	#define ERROR_RETURN return 1
+	void MyError(const string &s) {
+		cout << s << endl;
+	}
 }
 
 %code top
@@ -80,8 +84,19 @@
 %token FLOAT "float"
 %token CHAR "char"
 %token QUIT "quit"
+%token INSERT "insert"
+%token INTO "into"
+%token VALUES "values"
 %token <std::string> NUMBER
+%token <std::string> FRACTION
+%token <std::string> STRING_LIT
 %token <std::string> IDENTIFIER "identifier"
+%token EQ "="
+%token NE "<>"
+%token LESS "<"
+%token GREATER ">"
+%token LE "<="
+%token GE ">="
 %token LPAREN "("
 %token RPAREN ")"
 %token COMMA ","
@@ -108,9 +123,13 @@
 %type <WhereCond> where_condition;
 %type <WhereCondItem> where_condition_item;
 %type <Literal> literal;
-
+%type <CompareOp> compare_op;
 
 %type <InsertStatement*> insert_statement;
+%type <InsertTuples> insert_tuples;
+%type <InsertTuple> insert_tuple;
+%type <InsertTuple> insert_tuple_content;
+
 %type <DeleteStatement*> delete_statement;
 %type <ExecfileStatement*> execfile_statement;
 
@@ -149,8 +168,8 @@ statement:
     | drop_table_statement { $$ = dynamic_cast<Statement*>($1); } // written
     | create_index_statement { $$ = dynamic_cast<Statement*>($1); } // written
     | drop_index_statement { $$ = dynamic_cast<Statement*>($1); } // written
-    | select_statement { $$ = dynamic_cast<Statement*>($1); }
-    | insert_statement { $$ = dynamic_cast<Statement*>($1); }
+    | select_statement { $$ = dynamic_cast<Statement*>($1); } // written
+    | insert_statement { $$ = dynamic_cast<Statement*>($1); } // written
     | delete_statement { $$ = dynamic_cast<Statement*>($1); }
     | execfile_statement { $$ = dynamic_cast<Statement*>($1); }
     ;
@@ -293,15 +312,86 @@ where_condition_item:
 		}
 	;
 
-literal: // we don't check number size for now
+literal:
 	NUMBER
 		{
-			stringstream ss($1)"
+			stringstream ss($1);
 			int x;
 			ss >> x;
-			if (ss.fail()) MyError("int number '" + $1 + "' out of range");
-			else $$ = x;
+			if (ss.fail()) {
+				MyError("int number '" + $1 + "' out of range");
+				ERROR_RETURN;
+			} else $$ = Literal(x);
 		}
+	| FRACTION
+		{
+			stringstream ss($1);
+			float x;
+			ss >> x;
+			if (ss.fail()) {
+				MyError("float number '" + $1 + "' out of range");
+				ERROR_RETURN;
+			} else $$ = Literal(x);
+		}
+	| STRING_LIT
+		{
+			const string &str = $1;
+			size_t len = str.length();
+			if (len<2 || str.front()!='\'' || str.back()!='\'') {
+				MyError("string literal scan internal error: got " + str);
+				ERROR_RETURN;
+			} else {
+				string tmp = str.substr(1,len-2);
+				$$ = Literal(tmp);
+			}
+		}
+	;
+
+compare_op:
+	EQ { $$ = CompareOp::EQ; }
+	| NE { $$ = CompareOp::NE; }
+	| LESS { $$ = CompareOp::L; }
+	| GREATER { $$ = CompareOp::G; }
+	| LE { $$ = CompareOp::LE; }
+	| GE { $$ = CompareOp::GE; }
+	;
+
+insert_statement:
+	"insert" "into" IDENTIFIER "values" insert_tuples
+		{
+			$$ = new InsertStatement($3,$5);
+		}
+	;
+
+insert_tuples:
+	insert_tuple
+		{
+			$$ = InsertTuples{$1};
+		}
+	| insert_tuples "," insert_tuple
+		{
+			$$.swap($1);
+			$$.push_back($3);
+		}
+	;
+
+insert_tuple:
+	"(" insert_tuple_content ")"
+		{
+			$$.swap($2);
+		}
+	;
+
+insert_tuple_content:
+	literal { $$ = InsertTuple{$1}; }
+	| insert_tuple_content "," literal
+		{
+			$$.swap($1);
+			$$.push_back($3);
+		}
+	;
+
+
 
 %%
 

@@ -59,14 +59,32 @@ float 		{ return MeInt::Parser::make_FLOAT(MeInt::location()); }
 char		{ return MeInt::Parser::make_CHAR(MeInt::location()); }
 
 quit		{ return MeInt::Parser::make_QUIT(MeInt::location()); }
-		 
-[0-9]+		{ return MeInt::Parser::make_NUMBER(yytext,MeInt::location()); }
 
-[a-zA-Z_][a-zA-Z0-9_]*	{ return MeInt::Parser::make_IDENTIFIER(yytext,MeInt::location()); }
+"insert"	{ return MeInt::Parser::make_INSERT(MeInt::location()); }
+
+"into"		{ return MeInt::Parser::make_INTO(MeInt::location()); }
+
+"values"	{ return MeInt::Parser::make_VALUES(MeInt::location()); }
+
+		 
+\d+		{ return MeInt::Parser::make_NUMBER(yytext,MeInt::location()); }
+
+[-+]?((\d+\.\d*)|(\.\d+))	{ return MeInt::Parser::make_FRACTION(yytext,MeInt::location()); }
+
+'.*'		{ return MeInt::Parser::make_STRING_LIT(yytext,MeInt::location()); }
+
+[a-zA-Z_]\w*	{ return MeInt::Parser::make_IDENTIFIER(yytext,MeInt::location()); }
 
 \(			{ return MeInt::Parser::make_LPAREN(MeInt::location()); }
 
 \)			{ return MeInt::Parser::make_RPAREN(MeInt::location()); }
+
+"="			{ return MeInt::Parser::make_EQ(MeInt::location()); }
+"<>"		{ return MeInt::Parser::make_NE(MeInt::location()); }
+"<"			{ return MeInt::Parser::make_LESS(MeInt::location()); }
+">"			{ return MeInt::Parser::make_GREATER(MeInt::location()); }
+"<="		{ return MeInt::Parser::make_LE(MeInt::location()); }
+">="		{ return MeInt::Parser::make_GE(MeInt::location()); }
 
 ,			{ return MeInt::Parser::make_COMMA(MeInt::location()); }
 
