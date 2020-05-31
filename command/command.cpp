@@ -1,5 +1,5 @@
 /* 
- * MeSQL - Interpreter Component - command.cpp
+ * MeSQL - Command - command.cpp
  * 
  * This file implements the classes defined in command.hpp .
  */

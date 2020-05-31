@@ -1,5 +1,5 @@
 /* 
- * MeSQL - Interpreter Component - command.hpp
+ * MeSQL - Command Component - command.hpp
  * 
  * This file declares the important Statement class family.
  * Here we define numerous components of MeSQL statement, 

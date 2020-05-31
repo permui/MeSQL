@@ -15,14 +15,14 @@
 %define api.namespace { MeInt }
 %code requires
 {
-    #include <vector>
-    #include <string>
-    #include <sstream>
-    #include <iostream>
+	#include <vector>
+	#include <string>
+	#include <sstream>
+	#include <iostream>
 	#include <climits>
-    #include "command.hpp"
+	#include "../command/command.hpp"
 	#include "../base/error.hpp"
-    #include "../base/base.hpp"
+	#include "../base/base.hpp"
 
 	namespace MeInt {
 		class Scanner;
@@ -427,12 +427,6 @@ execfile_statement:
 
 %%
 
-// Bison expects us to provide implementation - otherwise linker complains
 void MeInt::Parser::error(const location &loc , const std::string &message) {
-        
-        // Location should be initialized inside scanner action, but is not in this example.
-        // Let's grab location directly from driver class.
-	// cout << "Error: " << message << endl << "Location: " << loc << endl;
-	
-        cout << "Error: " << message << endl << "Error location: " << driver.location() << endl;
+	cout << "Error: " << message << endl << "Error location: " << driver.location() << endl;
 }
