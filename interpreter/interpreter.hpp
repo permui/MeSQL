@@ -30,11 +30,13 @@ namespace MeInt {
     public:
         bool do_prompt;
         ostream *os;
+		int state;
         Interpreter();
         Interpreter(istream *_is,ostream *_os,bool _do_prompt);
         void clear();
         void parse();
         void setIstream(istream *is);
+		void set_state(int _state);
         void prompt() const;
         friend class Scanner;
         friend class Parser;

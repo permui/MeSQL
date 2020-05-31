@@ -18,7 +18,7 @@ namespace MeType {
         INT,FLOAT,CHAR,UNKNOWN
     };
     enum class CompareOp {
-        EQ,NE,L,G,LE,GE
+        EQ,NE,L,G,LE,GE,UNKNOWN
     };
     typedef int char_size_t;
     typedef int col_num_t;
@@ -62,6 +62,7 @@ namespace MeInfo {
         float float_val;
         string char_val;
 
+		Literal();
         Literal(int _val);
         Literal(float _val);
         Literal(const string &_val);
@@ -74,6 +75,7 @@ namespace MeInfo {
         CompareOp op;
         Literal lit;
 
+		WhereCondItem();
         WhereCondItem(const string &_col_name,CompareOp _op,const Literal &_lit);
         string str() const;
     };
@@ -89,11 +91,13 @@ namespace MeInfo {
 
     class InsertTuple : public vector<Literal> {
     public:
+		using vector<Literal>::vector;
         string str() const;
     };
 
     class InsertTuples : public vector<InsertTuple> {
     public:
+		using vector<InsertTuple>::vector;
         string str() const;
     };
 }

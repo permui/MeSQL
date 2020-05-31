@@ -28,37 +28,46 @@
 %option yyclass="Scanner"
 %option prefix="MeInt_"
 
+DIGIT [0-9]
+ICHAR [a-zA-Z0-9_]
+
 %%
 
-;			{ return MeInt::Parser::make_SEMICOLON(MeInt::location()); }
+";"			{ return MeInt::Parser::make_SEMICOLON(MeInt::location()); }
 
-*			{ return MeInt::Parser::make_STAR(MeInt::location()); }
+"*"			{ return MeInt::Parser::make_STAR(MeInt::location()); }
 
-create		{ return MeInt::Parser::make_CREATE(MeInt::location()); }
+"create"	{ return MeInt::Parser::make_CREATE(MeInt::location()); }
 
-table		{ return MeInt::Parser::make_TABLE(MeInt::location()); }
+"table"		{ return MeInt::Parser::make_TABLE(MeInt::location()); }
 
-unique 		{ return MeInt::Parser::make_UNIQUE(MeInt::location()); }
+"unique"	{ return MeInt::Parser::make_UNIQUE(MeInt::location()); }
 
-primary		{ return MeInt::Parser::make_PRIMARY(MeInt::location()); }
+"primary"	{ return MeInt::Parser::make_PRIMARY(MeInt::location()); }
 
-key 		{ return MeInt::Parser::make_KEY(MeInt::location()); }
+"key" 		{ return MeInt::Parser::make_KEY(MeInt::location()); }
 
-drop		{ return MeInt::Parser::make_DROP(MeInt::location()); }
+"drop"		{ return MeInt::Parser::make_DROP(MeInt::location()); }
 
-index		{ return MeInt::Parser::make_INDEX(MeInt::location()); }
+"index"		{ return MeInt::Parser::make_INDEX(MeInt::location()); }
 
-on			{ return MeInt::Parser::make_ON(MeInt::location()); }
+"select"		{ return MeInt::Parser::make_SELECT(MeInt::location()); }
 
-and			{ return MeInt::Parser::make_AND(MeInt::location()); }
+"from"		{ return MeInt::Parser::make_FROM(MeInt::location()); }
 
-int 		{ return MeInt::Parser::make_INT(MeInt::location()); }
+"where"		{ return MeInt::Parser::make_WHERE(MeInt::location()); }
 
-float 		{ return MeInt::Parser::make_FLOAT(MeInt::location()); }
+"on"		{ return MeInt::Parser::make_ON(MeInt::location()); }
 
-char		{ return MeInt::Parser::make_CHAR(MeInt::location()); }
+"and"		{ return MeInt::Parser::make_AND(MeInt::location()); }
 
-quit		{ return MeInt::Parser::make_QUIT(MeInt::location()); }
+"int" 		{ return MeInt::Parser::make_INT(MeInt::location()); }
+
+"float"		{ return MeInt::Parser::make_FLOAT(MeInt::location()); }
+
+"char"		{ return MeInt::Parser::make_CHAR(MeInt::location()); }
+
+"quit"		{ return MeInt::Parser::make_QUIT(MeInt::location()); }
 
 "insert"	{ return MeInt::Parser::make_INSERT(MeInt::location()); }
 
@@ -68,17 +77,17 @@ quit		{ return MeInt::Parser::make_QUIT(MeInt::location()); }
 
 "delete"	{ return MeInt::Parser::make_DELETE(MeInt::location()); }
 
-"quit"		{ return MeInt::Parser::make_QUIT(MeInt::location()); }
+"execfile"	{ return MeInt::Parser::make_EXECFILE(MeInt::location()); }
 
-\"[^\s"]+\"	{ return MeInt::Parser::make_FILENAME(yytext,MeInt::location()); }
+\"[^ \t\n"]+\"	{ return MeInt::Parser::make_FILENAME(yytext,MeInt::location()); }
 		 
-\d+		{ return MeInt::Parser::make_NUMBER(yytext,MeInt::location()); }
+{DIGIT}+	{ return MeInt::Parser::make_NUMBER(yytext,MeInt::location()); }
 
-[-+]?((\d+\.\d*)|(\.\d+))	{ return MeInt::Parser::make_FRACTION(yytext,MeInt::location()); }
+[-+]?(({DIGIT}+\.{DIGIT}*)|(\.{DIGIT}+))	{ return MeInt::Parser::make_FRACTION(yytext,MeInt::location()); }
 
 '.*'		{ return MeInt::Parser::make_STRING_LIT(yytext,MeInt::location()); }
 
-[a-zA-Z_]\w*	{ return MeInt::Parser::make_IDENTIFIER(yytext,MeInt::location()); }
+[a-zA-Z_]{ICHAR}*	{ return MeInt::Parser::make_IDENTIFIER(yytext,MeInt::location()); }
 
 \(			{ return MeInt::Parser::make_LPAREN(MeInt::location()); }
 
@@ -91,7 +100,7 @@ quit		{ return MeInt::Parser::make_QUIT(MeInt::location()); }
 "<="		{ return MeInt::Parser::make_LE(MeInt::location()); }
 ">="		{ return MeInt::Parser::make_GE(MeInt::location()); }
 
-,			{ return MeInt::Parser::make_COMMA(MeInt::location()); }
+","			{ return MeInt::Parser::make_COMMA(MeInt::location()); }
 
 [\n\t ]		{ }
 

@@ -8,8 +8,8 @@ const static char prompt_str_2[] = "... ";
 const static char bye_str[] = "Bye";
 int main() {
 	stringstream ss;
-	Interpreter a(&ss,&cout,false);
-	cout << "MeSQL Shell" << endl << endl;
+	cout << "MeSQL Shell - GCC " << __VERSION__;
+	cout << " (" << __TIMESTAMP__ << ")" << endl << endl;
 	cout << prompt_str_1;
 	bool started = false;
 	while (true) {
@@ -19,11 +19,12 @@ int main() {
 			started = true;
 			ss << c;
 			if (c==';') {
+				Interpreter a(&ss,&cout,false);
 				a.clear();
-				int res = a.parse();
+				a.parse();
 				started = false;
 				ss.str(string());
-				if (res == -1) break; // -1 means got a "quit;" statement
+				if (a.state == -1) break; // -1 state means got a "quit;" statement
 			}
 		}
 		if (c=='\n') cout << (started ? prompt_str_2 : prompt_str_1);

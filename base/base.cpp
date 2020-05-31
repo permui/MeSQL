@@ -27,6 +27,7 @@ namespace MeType {
             case CompareOp::G  : return ">";
             case CompareOp::LE : return "<=";
             case CompareOp::GE : return ">=";
+			case CompareOp::UNKNOWN : return "UNKNOWN COMPARE OPERATOR";
         }
         return "UNDEFINED OPERATOR";
     }
@@ -62,6 +63,7 @@ namespace MeInfo {
     }
 
     // implement class Literal
+	Literal::Literal() : dtype(DataType::UNKNOWN),int_val(0),float_val(0),char_val() {}
     Literal::Literal(int _val) : dtype(DataType::INT),int_val(_val),float_val(0),char_val() {}
     Literal::Literal(float _val) : dtype(DataType::FLOAT),int_val(0),float_val(_val),char_val() {}
     Literal::Literal(const string &_val) : dtype(DataType::CHAR),int_val(0),float_val(0),char_val(_val) {}
@@ -80,6 +82,7 @@ namespace MeInfo {
     }
 
     // implement class WhereCondItem
+	WhereCondItem::WhereCondItem() : col_name(),op(CompareOp::UNKNOWN),lit() {}
     WhereCondItem::WhereCondItem(const string &_col_name,CompareOp _op,const Literal &_lit) :
         col_name(_col_name),op(_op),lit(_lit) {}
 

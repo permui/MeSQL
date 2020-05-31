@@ -21,6 +21,7 @@
     #include <iostream>
 	#include <climits>
     #include "command.hpp"
+	#include "../base/error.hpp"
     #include "../base/base.hpp"
 
 	namespace MeInt {
@@ -34,9 +35,6 @@
 {
     const char greet_str[] = "MeSQL shell\n\n";
 	#define ERROR_RETURN return 1
-	void MyError(const string &s) {
-		cout << s << endl;
-	}
 }
 
 %code top
@@ -53,6 +51,7 @@
     using namespace MeInt;
     using namespace MeType;
     using namespace MeInfo;
+	using namespace MeError;
 }
 
 %lex-param { MeInt::Scanner &scanner }
@@ -87,13 +86,13 @@
 %token INSERT "insert"
 %token INTO "into"
 %token VALUES "values"
-$token DELETE "delete"
-%token QUIT "quit"
-%token <std::string> NUMBER
-%token <std::string> FRACTION
-%token <std::string> STRING_LIT
+%token DELETE "delete"
+%token EXECFILE "execfile"
+%token <std::string> NUMBER "number"
+%token <std::string> FRACTION "fraction"
+%token <std::string> STRING_LIT "string literal"
 %token <std::string> IDENTIFIER "identifier"
-%token <std::string> FILENAME
+%token <std::string> FILENAME "file name"
 %token EQ "="
 %token NE "<>"
 %token LESS "<"
@@ -157,6 +156,7 @@ program :
         }
 	| program "quit" ";"
 		{
+			driver.set_state(-1);
 			return -1;
 		}
 	| program END 
@@ -177,8 +177,8 @@ statement:
     | drop_index_statement { $$ = dynamic_cast<Statement*>($1); } // written
     | select_statement { $$ = dynamic_cast<Statement*>($1); } // written
     | insert_statement { $$ = dynamic_cast<Statement*>($1); } // written
-    | delete_statement { $$ = dynamic_cast<Statement*>($1); }
-    | execfile_statement { $$ = dynamic_cast<Statement*>($1); }
+    | delete_statement { $$ = dynamic_cast<Statement*>($1); } // written
+    | execfile_statement { $$ = dynamic_cast<Statement*>($1); } // written
     ;
 
 create_table_statement:
@@ -307,8 +307,8 @@ where_condition:
 		}
 	| where_condition "and" where_condition_item
 		{
-			$$.swap($1);
-			$$.push_back($3);
+			$$.items.swap($1.items);
+			$$.items.push_back($3);
 		}
 	;
 
