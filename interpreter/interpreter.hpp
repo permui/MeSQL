@@ -34,7 +34,6 @@ namespace MeInt {
         bool do_prompt;
         ostream *os;
 		int state;
-        Interpreter();
         Interpreter(istream *_is,ostream *_os,bool _do_prompt,Manager &_man);
         void clear();
         void parse();

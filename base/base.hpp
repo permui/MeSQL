@@ -21,7 +21,7 @@ namespace MeType {
         EQ,NE,L,G,LE,GE,UNKNOWN
     };
     typedef int char_size_t;
-    typedef int col_num_t;
+    typedef int col_num_t; // cannot be too small ; used in ResultManager
 
     string DataTypeStr(DataType dtype);
     string CompareOpStr(CompareOp op);

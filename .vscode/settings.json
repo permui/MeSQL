@@ -9,6 +9,10 @@
 		"random": "cpp",
 		"regex": "cpp",
 		"string": "cpp",
-		"ostream": "cpp"
+		"ostream": "cpp",
+		"bitset": "cpp",
+		"complex": "cpp",
+		"cstdio": "cpp",
+		"numeric": "cpp"
 	}
 }

@@ -90,6 +90,9 @@
 %token VALUES "values"
 %token DELETE "delete"
 %token EXECFILE "execfile"
+%token SHOW "show"
+%token TABLES "tables"
+%token INDEXES "indexes"
 %token <std::string> NUMBER "number"
 %token <std::string> FRACTION "fraction"
 %token <std::string> STRING_LIT "string literal"
@@ -137,6 +140,9 @@
 %type <DeleteStatement*> delete_statement;
 %type <ExecfileStatement*> execfile_statement;
 
+%type <ShowTablesStatement*> show_tables_statement;
+%type <ShowIndexesStatement*> show_indexes_statement;
+
 %%
 
 program : 
@@ -179,6 +185,8 @@ statement:
     | insert_statement { $$ = dynamic_cast<Statement*>($1); } // written
     | delete_statement { $$ = dynamic_cast<Statement*>($1); } // written
     | execfile_statement { $$ = dynamic_cast<Statement*>($1); } // written
+	| show_tables_statement { $$ = dynamic_cast<Statement*>($1); } // written
+	| show_indexes_statement { $$ = dynamic_cast<Statement*>($1); } // written
     ;
 
 create_table_statement:
@@ -424,6 +432,13 @@ execfile_statement:
 		}
 	;
 
+show_tables_statement:
+	"show" "tables" { $$ = new ShowTablesStatement; }
+	;
+
+show_indexes_statement:
+	"show" "indexes" { $$ = new ShowIndexesStatement; }
+	;
 
 %%
 

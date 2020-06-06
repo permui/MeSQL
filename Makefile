@@ -2,8 +2,8 @@ intest:
 	cd interpreter && \
 	flex -o scanner.cpp scanner.l && \
 	bison -o parser.cpp parser.y && \
-	g++ -g ../base/base.cpp ../ui.cpp ../base/color.cpp ../base/error.cpp scanner.cpp parser.cpp interpreter.cpp ../command/command.cpp -o ../ui && \
-	cd ..
+	cd .. && \
+	g++ -g ui.cpp base/base.cpp base/color.cpp base/error.cpp base/manager.cpp catalog/catalog.cpp command/command.cpp interpreter/scanner.cpp interpreter/parser.cpp interpreter/interpreter.cpp -o ui 
 
 clean:
 	cd interpreter && \

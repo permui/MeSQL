@@ -19,9 +19,6 @@ const static char prompt_str_2[] = "... ";
 namespace MeInt {
 
     // implement class Interpreter
-    Interpreter::Interpreter() : do_prompt(true),os(&cout),m_scanner(*this),m_parser(m_scanner,*this),m_location(0),state(0) {
-        setIstream(&cin);
-    }
     Interpreter::Interpreter(istream *_is,ostream *_os,bool _do_prompt,Manager &_man) : 
 		do_prompt(_do_prompt),os(_os),m_scanner(*this),m_parser(m_scanner,*this),m_location(0),state(0),m_man(_man) {
         setIstream(_is);

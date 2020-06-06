@@ -188,4 +188,32 @@ namespace MeInt {
         // now just print
         print();
     }
+
+	// implement class ShowTablesStatement
+	ShowTablesStatement::ShowTablesStatement() {}
+	string ShowTablesStatement::str() const {
+		return colorful("show tables statement",default_color);
+	}
+	void ShowTablesStatement::print() const {
+		*printer << str() << endl;
+	}
+	void ShowTablesStatement::execute() {
+		// TODO
+		// now just print
+		CatalogManager &cat = man->cat;
+
+	}
+
+	ShowIndexesStatement::ShowIndexesStatement() {}
+	string ShowIndexesStatement::str() const {
+		return colorful("show indexes statement",default_color);
+	}
+	void ShowIndexesStatement::print() const {
+		*printer << str() << endl;
+	}
+	void ShowIndexesStatement::execute() {
+		// TODO
+		// now just print
+		print();
+	}
 }

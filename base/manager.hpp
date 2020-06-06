@@ -10,16 +10,29 @@
 #ifndef MANAGER_HPP
 #define MANAGER_HPP
 
+#include <string>
+#include "../catalog/catalog.hpp"
+#include "base.hpp"
+
+using namespace std;
+
 namespace MeMan {
 
-	// forward declare ; TODO ; should be deleted when they are implemented.
-	class CatalogManager;
-	class BufferManager;
+	using namespace MeCat;
+
+	class TmpManager {
+	private:
+		size_t cnt;
+	public:
+		TmpManager();
+		string new_tmp();
+		void ret_tmp(const string &);
+	};
 
 	class Manager {
 	public:
 		CatalogManager cat;
-//		BufferManager buf;
+		TmpManager tmp;
 
 		Manager(); 
 	};

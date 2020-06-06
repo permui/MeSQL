@@ -79,6 +79,12 @@ ICHAR [a-zA-Z0-9_]
 
 "execfile"	{ return MeInt::Parser::make_EXECFILE(MeInt::location()); }
 
+"show"		{ return MeInt::Parser::make_SHOW(MeInt::location()); }
+
+"tables"	{ return MeInt::Parser::make_TABLES(MeInt::location()); }
+
+"indexes"	{ return MeInt::Parser::make_INDEXES(MeInt::location()); }
+
 \"[^ \t\n"]+\"	{ return MeInt::Parser::make_FILENAME(yytext,MeInt::location()); }
 		 
 {DIGIT}+	{ return MeInt::Parser::make_NUMBER(yytext,MeInt::location()); }

@@ -27,11 +27,10 @@ namespace MeInt {
 
     /* Base class Statement */
     class Statement {
-	private:
-		Manager *man;
     protected:
         string content;
         ostream *printer;
+		Manager *man;
     public:
         Statement();
         virtual ~Statement() {}
@@ -129,6 +128,22 @@ namespace MeInt {
         void print() const;
         void execute();
     };
+
+	class ShowTablesStatement : public Statement {
+	public:
+		ShowTablesStatement();
+		string str() const;
+		void print() const;
+		void execute();
+	};
+
+	class ShowIndexesStatement : public Statement {
+	public:
+		ShowIndexesStatement();
+		string str() const;
+		void print() const;
+		void execute();
+	};
 }
 
 #endif
