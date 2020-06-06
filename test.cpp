@@ -1,9 +1,9 @@
 #include <bits/stdc++.h>
-#include "interpreter/interpreter.hpp"
+#include "catalog/catalog.hpp"
 using namespace std;
-using namespace MeInt;
+using namespace MeCat;
 
 int main() {
-	string s;
+	CatalogManager one,two;
     return 0;
 }

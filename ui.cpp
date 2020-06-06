@@ -1,6 +1,7 @@
 #include <iostream>
 #include <sstream>
 #include "interpreter/interpreter.hpp"
+#include "base/manager.hpp"
 using namespace std;
 using namespace MeInt;
 const static char prompt_str_1[] = ">>> ";
@@ -11,6 +12,7 @@ int main() {
 	cout << "MeSQL Shell - GCC " << __VERSION__;
 	cout << " (" << __TIMESTAMP__ << ")" << endl << endl;
 	cout << prompt_str_1;
+	MeMan::Manager man;
 	bool started = false;
 	while (true) {
 		char c = cin.get();
@@ -19,7 +21,7 @@ int main() {
 			started = true;
 			ss << c;
 			if (c==';') {
-				Interpreter a(&ss,&cout,false);
+				Interpreter a(&ss,&cout,false,man);
 				a.clear();
 				a.parse();
 				started = false;

@@ -23,6 +23,7 @@
 	#include "../command/command.hpp"
 	#include "../base/error.hpp"
 	#include "../base/base.hpp"
+	#include "../catalog/catalog.hpp"
 
 	namespace MeInt {
 		class Scanner;
@@ -52,6 +53,7 @@
     using namespace MeType;
     using namespace MeInfo;
 	using namespace MeError;
+	using namespace MeCat;
 }
 
 %lex-param { MeInt::Scanner &scanner }
@@ -148,11 +150,9 @@ program :
     | program statement ";"
         {
             Statement *stat = $2;
+			stat->set_manager(&driver.m_man);
             stat->execute();
-            // string res = stat->result_str(); // they are virtual function
-            // *driver.os << res << endl << endl;
 			delete stat;
-            //driver.prompt();
         }
 	| program "quit" ";"
 		{

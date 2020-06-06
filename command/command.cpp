@@ -22,7 +22,10 @@ namespace MeInt {
     using namespace MeInfo;
 
     // implement class Statement
-    Statement::Statement() : content(),printer(&cerr) {} // note this printer initialization
+    Statement::Statement() : content(),printer(&cout) {} // note this printer initialization
+	void Statement::set_manager(Manager *_man) {
+		man = _man;
+	}
 
     // implement class CreateTableStatement
     CreateTableStatement::CreateTableStatement(const string &_table_name,const vector<TableColumnDef> &_cols,const string &_primary_key) :

@@ -30,31 +30,6 @@ namespace MeType {
 namespace MeInfo {
     using namespace MeType;
 
-    /* Column specification : col_spec = (col_type col_constraint) + is_primary_key */
-    class TableColumnSpec {
-    public:
-        DataType data_type;
-        char_size_t len; // 0 if not needed
-        bool is_unique;
-        bool is_primary_key;
-
-		TableColumnSpec();
-        TableColumnSpec(DataType _data_type,char_size_t _len,bool _is_unique,bool _is_primary_key);
-        string str() const;
-    };
-
-    /* Column definition : col_defi = (col_name col_spec) */
-    class TableColumnDef {
-    public:
-        col_num_t ord;
-        string col_name;
-        TableColumnSpec col_spec;
-
-		TableColumnDef();
-        TableColumnDef(col_num_t _ord,const string &_col_name,const TableColumnSpec &_col_spec);
-        string str() const;
-    };
-
     class Literal {
     public:
         DataType dtype;
