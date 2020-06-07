@@ -26,7 +26,8 @@ namespace MeBuf {
 		return file_path == b.file_path && ord == b.ord;
 	}
 	size_t BlockSpec::hash() const { // djb2 hash function ; not moded
-		stringstream ss;
+		static stringstream ss;
+		ss.str("");
 		ss << file_path << ":" << ord;
 		size_t ret = 5381;
 		for (char c:ss.str()) ret = ret * 33 + c;
@@ -118,7 +119,9 @@ namespace MeBuf {
 			buffer_index_t index = new_index(bls);
 			h[bls] = index;
 			memcpy(m_data[index],aux,block_size);
-			return make_block(index);
+			Block ret = make_block(index);
+			if (len==0) ret.ink();
+			return ret;
 		}
 		return empty_block();
 	}

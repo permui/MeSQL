@@ -9,6 +9,14 @@ using namespace std;
 
 namespace MeType {
 
+	int DataTypeLen(DataType dtype) {
+		switch (dtype) {
+			case DataType::INT : return 4;
+			case DataType::FLOAT : return 4;
+			default : return -1;
+		}
+	}
+
     string DataTypeStr(DataType dtype) {
         switch (dtype) {
             case DataType::INT : return "INT";
@@ -44,7 +52,8 @@ namespace MeInfo {
     Literal::Literal(const string &_val) : dtype(DataType::CHAR),int_val(0),float_val(0),char_val(_val) {}
 
     string Literal::str() const {
-        stringstream ss;
+        static stringstream ss;
+		ss.str("");
         switch (dtype) {
             case DataType::INT:
                 ss << int_val; break;
@@ -56,13 +65,28 @@ namespace MeInfo {
         return ss.str();
     }
 
+	string Literal::str_unquoted() const {
+		static stringstream ss;
+		ss.str("");
+		switch (dtype) {
+			case DataType::INT:
+				ss << int_val; break;
+			case DataType::FLOAT:
+				ss << showpoint << float_val; break;
+			case DataType::CHAR:
+				ss.str(char_val); break;
+		}
+		return ss.str();
+	}
+
     // implement class WhereCondItem
 	WhereCondItem::WhereCondItem() : col_name(),op(CompareOp::UNKNOWN),lit() {}
     WhereCondItem::WhereCondItem(const string &_col_name,CompareOp _op,const Literal &_lit) :
         col_name(_col_name),op(_op),lit(_lit) {}
 
     string WhereCondItem::str() const {
-        stringstream ss;
+        static stringstream ss;
+		ss.str("");
         ss << col_name << ' ' << CompareOpStr(op) << ' ' << lit.str();
         return ss.str();
     }
@@ -72,14 +96,16 @@ namespace MeInfo {
     WhereCond::WhereCond(const vector<WhereCondItem> &_items) : items(_items) {}
 
     string WhereCond::str() const {
-        stringstream ss;
+        static stringstream ss;
+		ss.str("");
         for (const WhereCondItem &item:items) ss << '[' << item.str() << ']' << ' ';
         return ss.str();
     }
 
     // implement class InsertTuple
     string InsertTuple::str() const {
-        stringstream ss;
+        static stringstream ss;
+		ss.str("");
         ss << '(';
         for (const Literal &lit:*this) ss << lit.str() << ',';
         ss << ')';

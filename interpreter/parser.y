@@ -239,13 +239,15 @@ create_table_col_type:
             bool err = false;
             int tmp = 0;
             if (num.length() > 3) err = true; else {
-                stringstream ss;
+				static stringstream ss;
+				ss.str("");
                 ss << num;
                 ss >> tmp;
                 if (!(1<=tmp && tmp<=255)) err = true;
             }
             if (err) {
-                stringstream ss;
+				static stringstream ss;
+				ss.str("");
                 ss << "invalid char() length " << num;
                 error(location(),ss.str());
             } else {
@@ -330,7 +332,8 @@ where_condition_item:
 literal:
 	NUMBER
 		{
-			stringstream ss($1);
+			static stringstream ss;
+			ss.str($1);
 			int x;
 			ss >> x;
 			if (ss.fail()) {
@@ -340,7 +343,8 @@ literal:
 		}
 	| FRACTION
 		{
-			stringstream ss($1);
+			static stringstream ss;
+			ss.str($1);
 			float x;
 			ss >> x;
 			if (ss.fail()) {

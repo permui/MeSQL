@@ -12,7 +12,8 @@
 using namespace std;
 
 string colorful(const string &inp,COLOR color) {
-    stringstream ss;
+    static stringstream ss;
+	ss.str("");
     ss << "\033[1;" << static_cast<int>(color) << "m";
     ss << inp << "\033[0m";
     return ss.str();

@@ -34,7 +34,8 @@ namespace MeInt {
 	}
 
     string CreateTableStatement::str() const {
-        stringstream ss;
+        static stringstream ss;
+		ss.str("");
         ss << colorful("create table statement :",default_color) << endl;
         ss << "table name : " << table_name << endl;
         ss << "columns definition :" << endl;
@@ -57,7 +58,8 @@ namespace MeInt {
     // implement class DropTableStatement
     DropTableStatement::DropTableStatement(const string &_table_name) : table_name(_table_name) {}
     string DropTableStatement::str() const {
-        stringstream ss;
+        static stringstream ss;
+		ss.str("");
         ss << colorful("drop table statement :",default_color) << endl;
         ss << "table name : " << table_name << endl;
         return ss.str();
@@ -75,7 +77,8 @@ namespace MeInt {
     CreateIndexStatement::CreateIndexStatement(const string &_index_name,const string &_table_name,const string &_col_name) :
         index_name(_index_name),table_name(_table_name),col_name(_col_name) {}
     string CreateIndexStatement::str() const {
-        stringstream ss;
+        static stringstream ss;
+		ss.str("");
         ss << colorful("create index statement :",default_color) << endl;
         ss << "index name : " << index_name << endl;
         ss << "table name : " << table_name << endl;
@@ -94,7 +97,8 @@ namespace MeInt {
     // implement class DropIndexStatement
     DropIndexStatement::DropIndexStatement(const string &_index_name) : index_name(_index_name) {}
     string DropIndexStatement::str() const {
-        stringstream ss;
+        static stringstream ss;
+		ss.str("");
         ss << colorful("drop index statement :",default_color) << endl;
         ss << "index name : " << index_name << endl;
         return ss.str();
@@ -112,7 +116,8 @@ namespace MeInt {
     SelectStatement::SelectStatement(const string &_table_name,const vector<string> &_proj_cols,const WhereCond &_cond) :
         table_name(_table_name),proj_cols(_proj_cols),cond(_cond) {}
     string SelectStatement::str() const {
-        stringstream ss;
+        static stringstream ss;
+		ss.str("");
         ss << colorful("select statement :",default_color) << endl;
         ss << "table name : " << table_name << endl;
         ss << "project to columns : ";
@@ -135,7 +140,8 @@ namespace MeInt {
         table_name(_table_name),tps(_tps) {}
 
     string InsertStatement::str() const {
-        stringstream ss;
+        static stringstream ss;
+		ss.str("");
         ss << colorful("insert statement :",default_color) << endl;
         ss << "table name : " << table_name << endl;
         ss << "insert tuples :" << endl;
@@ -156,7 +162,8 @@ namespace MeInt {
         table_name(_table_name),cond(_cond) {}
 
     string DeleteStatement::str() const {
-        stringstream ss;
+        static stringstream ss;
+		ss.str("");
         ss << colorful("delte statement :",default_color) << endl;
         ss << "table name : " << table_name << endl;
         ss << "where condition : " << cond.str() << endl;
@@ -175,7 +182,8 @@ namespace MeInt {
     ExecfileStatement::ExecfileStatement(const string &_file_name) : file_name(_file_name) {}
 
     string ExecfileStatement::str() const {
-        stringstream ss;
+        static stringstream ss;
+		ss.str("");
         ss << colorful("execfile statement :",default_color) << endl;
         ss << "file name : " << file_name << endl;
         return ss.str();
@@ -200,8 +208,6 @@ namespace MeInt {
 	void ShowTablesStatement::execute() {
 		// TODO
 		// now just print
-		CatalogManager &cat = man->cat;
-
 	}
 
 	ShowIndexesStatement::ShowIndexesStatement() {}

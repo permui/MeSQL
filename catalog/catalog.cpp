@@ -125,7 +125,8 @@ namespace MeCat {
             ord(_ord),col_name(_col_name),col_spec(_col_spec) {}
 
     string TableColumnDef::str() const {
-        stringstream ss;
+        static stringstream ss;
+		ss.str("");
         ss << ord << ": " << col_name << " ";
         ss << DataTypeStr(col_spec.data_type);
         if (col_spec.data_type==DataType::CHAR) ss << '(' << col_spec.len << ')';
@@ -160,7 +161,8 @@ namespace MeCat {
 		dump();
 	}
 	void CatalogManager::dump() {
-		stringstream ss;
+		static stringstream ss;
+		ss.str("");
 		embed_to_stream(tables,ss);
 		embed_to_stream(indexes,ss);
 		ofstream f(CATA_FILE);
@@ -168,13 +170,14 @@ namespace MeCat {
 		f.close();
 	}
 	void CatalogManager::load() {
+		static stringstream ss;
 		ifstream f(CATA_FILE);
 		if (f.fail()) return; // file not exists, load nothing
 		size_t len = file_len(f);
 		char *str = new char[len];
 		f.read(str,len);
 		f.close();
-		stringstream ss(str);
+		ss.str(str);
 		delete str;
 		parse_from_stream(tables,ss);
 		parse_from_stream(indexes,ss);

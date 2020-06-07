@@ -102,6 +102,7 @@ namespace MeBuf {
 		void write_block(const BlockSpec &bls,char *from);
 
 		// create if not exists means : if there is no this block **in the file** then create 
+		// if create a block , then it's data is empty at the beginning
 		// if not exists and not created , then empty_block = Block(*this,-1,nullptr) is returned
 		// throw an MeInternalError if file cannot be read
 		Block get_block(const string &_file_path,size_t _ord,bool create_if_not_exists);

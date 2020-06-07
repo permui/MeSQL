@@ -20,7 +20,7 @@ namespace MeCat {
 	using namespace MeType;
 
     /* Column specification : col_spec = (col_type col_constraint) + is_primary_key */
-    class TableColumnSpec {
+    class TableColumnSpec { // fixed length
     public:
         DataType data_type;
         char_size_t len; // 0 if not needed
@@ -33,7 +33,7 @@ namespace MeCat {
     };
 
     /* Column definition : col_defi = (col_name col_spec) */
-    class TableColumnDef {
+    class TableColumnDef { // var length due to col_name
     public:
         col_num_t ord;
         string col_name;

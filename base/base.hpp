@@ -23,6 +23,7 @@ namespace MeType {
     typedef int char_size_t;
     typedef int col_num_t; // cannot be too small ; used in ResultManager
 
+	int DataTypeLen(DataType dtype); // if unknown -1
     string DataTypeStr(DataType dtype);
     string CompareOpStr(CompareOp op);
 }
@@ -42,6 +43,7 @@ namespace MeInfo {
         Literal(float _val);
         Literal(const string &_val);
         string str() const;
+		string str_unquoted() const;
     };
 
     class WhereCondItem {
