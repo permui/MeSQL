@@ -13,6 +13,8 @@
 		"bitset": "cpp",
 		"complex": "cpp",
 		"cstdio": "cpp",
-		"numeric": "cpp"
+		"numeric": "cpp",
+		"limits": "cpp",
+		"cstring": "cpp"
 	}
 }

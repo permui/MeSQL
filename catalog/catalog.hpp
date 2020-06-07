@@ -91,11 +91,10 @@ namespace MeCat {
 		vector<TableInfo> tables;
 		vector<IndexInfo> indexes;
 
-		void load(); // load catalog into class
-		void dump(); // dump catalog to file
-	public:
 		CatalogManager();
 		~CatalogManager();
+		void load(); // load catalog into class
+		void dump(); // dump catalog to file
 	};
 
 }

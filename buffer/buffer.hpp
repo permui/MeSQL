@@ -1,7 +1,7 @@
 /*
  * MeSQL - buffer - buffer.hpp
  * 
- * This file declares class BufferManager and others.
+ * This file declares class BufferManager and other related classes.
  *
  */
 
@@ -17,11 +17,9 @@ using namespace std;
 
 namespace MeBuf {
 
-	class BlockSpec;
-	class HashTable;
 	class BufferManager;
 
-	typedef int buffer_index_t;
+	typedef int buffer_index_t; // cannot be unsigned since -1 is used
 
 	class BlockSpec {
 	public:
@@ -34,7 +32,7 @@ namespace MeBuf {
 		bool operator== (const BlockSpec &b) const;
 	};
 
-	class HashTable {
+	class HashTable { // map : BlockSpec -> index in buffer
 	private:
 		struct Node {
 			BlockSpec key;
@@ -43,73 +41,81 @@ namespace MeBuf {
 			Node(const BlockSpec &_key);
 			Node(const BlockSpec &_key,buffer_index_t _val);
 		};
-		vector<Node> g[hash_table_size];
+		list<Node> g[hash_table_size];
 		
 	public:
 		HashTable();
 		bool have_key(const BlockSpec &key) const;
 		buffer_index_t& operator[] (const BlockSpec &key);
+		void erase(const BlockSpec &key);
+	};
+
+	class Block {
+	private:
+		BufferManager &buf;
+		buffer_index_t index;
+	public:
+		char *data; // data null means not exists and not created
+
+		Block(BufferManager &_buf,buffer_index_t _index,char *_data);
+		void ink();
+		void pin();
+		void unpin();
 	};
 
 	class BufferManager {
 	private:
-		// unpinned block's index list ; used for LRU
+		// unpinned block index list ; for LRU
 		typedef list<buffer_index_t> List;
-		List uplist;
+		typedef List::iterator itt;
+		List uplist,uselist;
+		itt list_node[block_num],use_node[block_num];
+		// index pool
+		buffer_index_t pol[block_num];
+		buffer_index_t cur;
 		
-		char m_data[block_num][block_size];
+		HashTable h;
 
-	public:
-		class Block {
-		private:
-			BufferManager *buf;
+		char m_data[block_num][block_size],aux[block_size];
+
+		class Info {
+		public:
+			BlockSpec bls;
 			bool inked;
 			bool pinned;
-		public:
-			buffer_index_t index; // *this 's index in b[]
-			List::iterator it; // initialize to uplist.end()
-			char *data;
-
-			Block();
-			Block(BufferManager *_buf,buffer_index_t _index,char *_data);
-			void ink();
-			void pin();
-			void unpin();
+			Info();
+			Info(const BlockSpec &_bls,bool _inked,bool _pinned);
 		};
-		Block b[block_num];
-
-	private:
-		class Pool {
-		private:
-			BufferManager *buf;
-			buffer_index_t pol[block_num];
-			buffer_index_t cur;
-		public:
-			Pool(BufferManager *_buf);
-			~Pool();
-			Block new_block();
-			void del_block(const Block &blo);
-			void del_all();
-			bool empty() const;
-		};
-		Pool pool;
-
-		HashTable h;
-		BlockSpec where[block_num];
-
+		Info info[block_num];
 	public:
 		BufferManager();
 		~BufferManager();
-		Block want(const string &_file_name,size_t ord,bool create_if_not_exists);
-		void pin(Block &blo);
-		void unpin(Block &blo);
-	private:
-		void discard();
+		Block make_block(buffer_index_t index);
+		Block empty_block();
 
-		friend class Pool;
+		// read bls into to[] and return length read ; size(to) must >= block_size
+		// throw an MeInternalError if file cannot be open 
+		size_t read_block(const BlockSpec &bls,char *to);
+
+		// write from to bls ; size(from) must >= block_size
+		// throw an MeInternalError if file cannot be written
+		void write_block(const BlockSpec &bls,char *from);
+
+		// create if not exists means : if there is no this block **in the file** then create 
+		// if not exists and not created , then empty_block = Block(*this,-1,nullptr) is returned
+		// throw an MeInternalError if file cannot be read
+		Block get_block(const string &_file_path,size_t _ord,bool create_if_not_exists);
+		Block get_block(const BlockSpec &bls,bool create_if_not_exists);
+		buffer_index_t new_index(const BlockSpec &bls);
+		void flush_index(buffer_index_t index); // just write it to disk
+		void del_index(buffer_index_t index); // flush and del, go back to pool
+		void discard_one(); // choose appropriate block and del it ; throw InternalError if cannot
+		void discard_all(); // del all block out of pool
+		bool more() const;
+		void ink(buffer_index_t index);
+		void pin(buffer_index_t index);
+		void unpin(buffer_index_t index);
 	};
-
-	typedef BufferManager::Block Block;
 
 }
 

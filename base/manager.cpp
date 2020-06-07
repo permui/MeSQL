@@ -16,11 +16,16 @@ namespace MeMan {
 
 	// implement class TmpManager
 	TmpManager::TmpManager() : cnt(0) {}
-	string TmpManager::new_tmp() {
-		++cnt;
+	TmpManager::~TmpManager() {
+		for (size_t i=1;i<=cnt;++i) remove(tmp_name(i).c_str());
+	}
+	string TmpManager::tmp_name(size_t x) const {
 		stringstream ss;
-		ss << DB_FILES "tmp/" << cnt << ".tmp";
-		string ret = ss.str();
+		ss << DB_FILES "tmp/" << x << ".tmp";
+		return ss.str();
+	}
+	string TmpManager::new_tmp() {
+		string ret = tmp_name(++cnt);
 		ofstream(ret); // create the file
 		return ret;
 	}
@@ -29,6 +34,6 @@ namespace MeMan {
 	}
 
 	// implement class Manager
-	Manager::Manager() : cat(),tmp() {}
+	Manager::Manager() : cat(),tmp(),buf() {}
 
 }
