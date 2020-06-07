@@ -10,6 +10,7 @@
 
 #include <cstddef> 
 #include <limits>
+#include "base/base.hpp"
 
 using namespace std;
 
@@ -22,6 +23,12 @@ static const size_t hash_table_size = 100003; // a prime number
 
 // path for directory db_files for code in one layer of folder
 #define DB_FILES "db_files/"
+
+// this should not be modified
+static const MeType::char_size_t max_CHAR_len = 255;
+
+static const MeType::char_size_t max_tablename = 255 - 3;
+static const MeType::char_size_t max_indexname = 255;
 
 
 #endif

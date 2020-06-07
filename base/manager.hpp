@@ -35,9 +35,13 @@ namespace MeMan {
 	};
 
 	// class Resulter mananges results from select / show statement
+	// how to use : init -> add_tuple -> print -> finish
 	class Resulter {
 	private:
 		Manager &man;
+
+		// what matter in TableColumnDef are :
+		// def.col_name, def.col_spec.data_type, def.col_spec.len
 		vector<TableColumnDef> col_defs;
 		vector<int> col_width;
 		size_t col_cnt;
@@ -67,6 +71,7 @@ namespace MeMan {
 		BufferManager buf;
 
 		Manager(); 
+		Resulter new_resulter();
 	};
 
 }

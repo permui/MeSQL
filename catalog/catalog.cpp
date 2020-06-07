@@ -8,6 +8,7 @@
 #include <sstream>
 #include <fstream>
 #include <vector>
+#include <map>
 #include "catalog.hpp"
 #include "../config.hpp"
 
@@ -68,6 +69,44 @@ template<typename T> static void embed_to_stream(vector<T> &vec,ostream &os) {
 	for (T &val:vec) embed_to_stream(val,os);
 }
 
+template<> void parse_from_stream< map<string,TableInfo> >(map<string,TableInfo> &mp,istream &is) {
+	typename map<string,TableInfo>::size_type len,i;
+	TableInfo ti;
+	read_from_stream(len,is);
+	mp.clear();
+	if (len == 0) return;
+	typename map<string,TableInfo>::iterator it = mp.end();
+	for (i=0;i<len;++i) {
+		parse_from_stream(ti,is);
+		it = mp.emplace_hint(it,ti.def.table_name,ti);
+	}
+}
+
+template<> void embed_to_stream< map<string,TableInfo> >(map<string,TableInfo> &mp,ostream &os) {
+	typename map<string,TableInfo>::size_type len = mp.size();
+	write_to_stream(len,os);
+	for (const pair<string,TableInfo> &pr:mp) embed_to_stream(pr.second,os);
+}
+
+template<> void parse_from_stream< map<string,IndexInfo> >(map<string,IndexInfo> &mp,istream &is) {
+	typename map<string,IndexInfo>::size_type len,i;
+	IndexInfo di;
+	read_from_stream(len,is);
+	mp.clear();
+	if (len == 0) return;
+	typename map<string,IndexInfo>::iterator it = mp.end();
+	for (i=0;i<len;++i) {
+		parse_from_stream(di,is);
+		it = mp.emplace_hint(it,di.def.index_name,di);
+	}
+}
+
+template<> void embed_to_stream< map<string,IndexInfo> >(map<string,IndexInfo> &mp,ostream &os) {
+	typename map<string,IndexInfo>::size_type len = mp.size();
+	write_to_stream(len,os);
+	for (const pair<string,IndexInfo> &pr:mp) embed_to_stream(pr.second,os);
+}
+
 template<> void parse_from_stream<IndexInfo>(IndexInfo &val,istream &is) {
 	parse_from_stream(val.def.index_name,is);
 	parse_from_stream(val.def.table_name,is);
@@ -123,6 +162,8 @@ namespace MeCat {
 	TableColumnDef::TableColumnDef() : ord(0),col_name(),col_spec() {}
     TableColumnDef::TableColumnDef(col_num_t _ord,const string &_col_name,const TableColumnSpec &_col_spec) :
             ord(_ord),col_name(_col_name),col_spec(_col_spec) {}
+	TableColumnDef::TableColumnDef(const string &_col_name,DataType _data_type,char_size_t _len) :
+		ord(0),col_name(_col_name),col_spec(_data_type,_len,false,false) {}
 
     string TableColumnDef::str() const {
         static stringstream ss;

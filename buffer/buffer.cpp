@@ -11,6 +11,7 @@
 #include <numeric>
 #include <cassert>
 #include <cstring>
+#include <algorithm>
 #include "../config.hpp"
 #include "buffer.hpp"
 #include "../base/error.hpp"
@@ -19,6 +20,7 @@ namespace MeBuf {
 
 	// implement class BlockSpec
 	BlockSpec::BlockSpec(const string &_file_path,size_t _ord) : file_path(_file_path),ord(_ord) {
+		reverse(file_path.begin(),file_path.end()); // for fast difference detection for performance
 		assert(ord < max_block_ord); // so further operation would not cause overflow
 		hash_index = hash() % hash_table_size;
 	}
@@ -28,7 +30,7 @@ namespace MeBuf {
 	size_t BlockSpec::hash() const { // djb2 hash function ; not moded
 		static stringstream ss;
 		ss.str("");
-		ss << file_path << ":" << ord;
+		ss << ord << ":" << file_path;
 		size_t ret = 5381;
 		for (char c:ss.str()) ret = ret * 33 + c;
 		return ret;
@@ -40,6 +42,10 @@ namespace MeBuf {
 	HashTable::HashTable() {}
 	bool HashTable::have_key(const BlockSpec &key) const {
 		for (const Node &v:g[key.hash_index]) if (v.key == key) return true;
+	}
+	buffer_index_t HashTable::at(const BlockSpec &key) const {
+		for (const Node &v:g[key.hash_index]) if (v.key == key) return v.val;
+		return -1;
 	}
 	buffer_index_t& HashTable::operator[] (const BlockSpec &key) {
 		list<Node> &lis = g[key.hash_index];
@@ -57,6 +63,9 @@ namespace MeBuf {
 		}
 		assert(flag);
 		if (!flag) throw MeError::MeInternalError("hash table erase key not exists");
+	}
+	void HashTable::insert(const BlockSpec &key,buffer_index_t val) {
+		g[key.hash_index].emplace_front(key,val);
 	}
 
 	// implement class Block
@@ -109,15 +118,15 @@ namespace MeBuf {
 		return get_block(bls,create_if_not_exists);
 	}
 	Block BufferManager::get_block(const BlockSpec &bls,bool create_if_not_exists) {
-		if (h.have_key(bls)) {
-			buffer_index_t index = h[bls];
-			pin(index);
-			return make_block(index);
+		buffer_index_t idx = h.at(bls);
+		if (idx != -1) {
+			pin(idx);
+			return make_block(idx);
 		}
 		size_t len = read_block(bls,aux);
 		if (len || create_if_not_exists) {
 			buffer_index_t index = new_index(bls);
-			h[bls] = index;
+			h.insert(bls,index); // assume by logic not exists
 			memcpy(m_data[index],aux,block_size);
 			Block ret = make_block(index);
 			if (len==0) ret.ink();

@@ -67,6 +67,7 @@ namespace MeMan {
 		col_width.clear();
 		col_cnt = row_cnt = 0;
 		man.tmp.ret_tmp(file);
+		file = "";
 		writer_block = writer_pos = 0;
 		reader_block = reader_pos = 0;
 	}
@@ -211,5 +212,8 @@ namespace MeMan {
 
 	// implement class Manager
 	Manager::Manager() : cat(),tmp(),buf() {}
+	Resulter Manager::new_resulter() {
+		return Resulter(*this);
+	}
 
 }

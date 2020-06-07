@@ -130,10 +130,13 @@ namespace MeInt {
     };
 
 	class ShowTablesStatement : public Statement {
+	private:
+		void _execute();
 	public:
 		ShowTablesStatement();
 		string str() const;
 		void print() const;
+		void _execute();
 		void execute();
 	};
 
@@ -142,6 +145,7 @@ namespace MeInt {
 		ShowIndexesStatement();
 		string str() const;
 		void print() const;
+		void _execute();
 		void execute();
 	};
 }

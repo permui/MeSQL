@@ -10,6 +10,8 @@
 #define CATALOG_HPP
 
 #include <string>
+#include <vector>
+#include <map>
 #include <iostream>
 #include "../base/base.hpp"
 #include "../config.hpp"
@@ -41,6 +43,7 @@ namespace MeCat {
 
 		TableColumnDef();
         TableColumnDef(col_num_t _ord,const string &_col_name,const TableColumnSpec &_col_spec);
+		TableColumnDef(const string &_col_name,DataType _data_type,char_size_t _len);
         string str() const;
     };
 
@@ -86,10 +89,10 @@ namespace MeCat {
 		void dump_to_ss(stringstream&);
 	};
 
-	class CatalogManager {
+	class CatalogManager { // should be implemented in map<name,Info> TODO
 	public:
-		vector<TableInfo> tables;
-		vector<IndexInfo> indexes;
+		map<string,TableInfo> tables;
+		map<string,IndexInfo> indexes;
 
 		CatalogManager();
 		~CatalogManager();

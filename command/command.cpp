@@ -11,6 +11,7 @@
 #include <vector>
 #include "../base/base.hpp"
 #include "../base/color.hpp"
+#include "../base/timer.hpp"
 #include "command.hpp"
 
 using namespace std;
@@ -20,6 +21,7 @@ static const COLOR default_color = COLOR::blue;
 namespace MeInt {
     using namespace MeType;
     using namespace MeInfo;
+	using namespace MeTime;
 
     // implement class Statement
     Statement::Statement() : content(),printer(&cout) {} // note this printer initialization
@@ -205,11 +207,21 @@ namespace MeInt {
 	void ShowTablesStatement::print() const {
 		*printer << str() << endl;
 	}
+	void ShowTablesStatement::_execute() {
+		const map<string,TableInfo> &mp = man->cat.tables;
+		Resulter res = man->new_resulter();
+		res.init({TableColumnDef("tables",DataType::CHAR,max_CHAR_len)});
+		for (const pair<string,TableInfo> &pr:mp) res.add_tuple({Literal(pr.first)});
+		res.print(cout);
+		res.finish();
+	}
 	void ShowTablesStatement::execute() {
-		// TODO
-		// now just print
+		Timer t; t.start();
+		_execute();
+		t.stop(); cout << t.paren_str() << endl;
 	}
 
+	// implement class ShowIndexesStatement
 	ShowIndexesStatement::ShowIndexesStatement() {}
 	string ShowIndexesStatement::str() const {
 		return colorful("show indexes statement",default_color);
@@ -217,9 +229,27 @@ namespace MeInt {
 	void ShowIndexesStatement::print() const {
 		*printer << str() << endl;
 	}
+	void ShowIndexesStatement::_execute() {
+		const map<string,TableInfo> &tab = man->cat.tables;
+		const map<string,IndexInfo> &ind = man->cat.indexes;
+		Resulter res = man->new_resulter();
+		res.init({
+			TableColumnDef("name",DataType::CHAR,max_CHAR_len),
+			TableColumnDef("for table",DataType::CHAR,max_CHAR_len),
+			TableColumnDef("on column",DataType::CHAR,max_CHAR_len)
+		});
+		for (const pair<string,IndexInfo> &pr:ind) {
+			const string &col = tab.at(pr.second.def.table_name).def.col_def[pr.second.def.col_ord].col_name;
+			res.add_tuple({
+				Literal(pr.first),Literal(pr.second.def.table_name),Literal(col)
+			});
+		}
+		res.print(cout);
+		res.finish();
+	}
 	void ShowIndexesStatement::execute() {
-		// TODO
-		// now just print
-		print();
+		Timer t; t.start();
+		_execute();
+		t.stop(); cout << t.paren_str() << endl;
 	}
 }

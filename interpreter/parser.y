@@ -159,6 +159,7 @@ program :
 			stat->set_manager(&driver.m_man);
             stat->execute();
 			delete stat;
+			*driver.os << endl;
         }
 	| program "quit" ";"
 		{

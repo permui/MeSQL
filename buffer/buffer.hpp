@@ -46,8 +46,11 @@ namespace MeBuf {
 	public:
 		HashTable();
 		bool have_key(const BlockSpec &key) const;
+		// if not exists return -1
+		buffer_index_t at(const BlockSpec &key) const;
 		buffer_index_t& operator[] (const BlockSpec &key);
 		void erase(const BlockSpec &key);
+		void insert(const BlockSpec &key,buffer_index_t val);
 	};
 
 	class Block {
