@@ -34,4 +34,7 @@ static const MeType::char_size_t max_tablename = 255 - 3;
 static const MeType::char_size_t max_indexname = 255;
 
 
+#define InternalError "InternalError"
+
+
 #endif

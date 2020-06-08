@@ -100,6 +100,8 @@ namespace MeCat {
 		void dump(); // dump catalog to file
 	};
 
+	pair<size_t,size_t> calc_len(const vector<TableColumnDef> &col_def);
+
 }
 
 #endif

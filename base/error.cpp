@@ -18,14 +18,11 @@ namespace MeError {
 	}
 
 	// implement class MeError
-	MeError::MeError() : msg("Unknown Error") {}
-	MeError::MeError(const string &_msg) : msg(_msg) {}
+	MeError::MeError() : pre(),msg("Unknown Error") {}
+	MeError::MeError(const string &_msg) : pre("Error"),msg(_msg) {}
+	MeError::MeError(const string &_pre,const string &_msg) : pre(_pre),msg(_msg) {}
 	string MeError::str() const {
-		return "Error : " + msg;
+		return pre.empty() ? msg : (pre + " : " + msg);
 	}
 
-	// implement class MeInternalError
-	string MeInternalError::str() const {
-		return "InternalError : " + msg;
-	}
 }

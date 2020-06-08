@@ -10,6 +10,7 @@
 
 #include <string>
 #include <vector>
+#include <algorithm>
 
 using namespace std;
 
@@ -78,6 +79,11 @@ namespace MeInfo {
 		using vector<InsertTuple>::vector;
         string str() const;
     };
+}
+
+namespace MeGad {
+	
+	template<typename T> bool check_unique(vector<T> vec);
 }
 
 #endif

@@ -12,6 +12,7 @@
 #include "../base/base.hpp"
 #include "../base/color.hpp"
 #include "../base/timer.hpp"
+#include "../base/error.hpp"
 #include "command.hpp"
 
 using namespace std;
@@ -22,9 +23,21 @@ namespace MeInt {
     using namespace MeType;
     using namespace MeInfo;
 	using namespace MeTime;
+	using namespace MeError;
 
     // implement class Statement
-    Statement::Statement() : content(),printer(&cout) {} // note this printer initialization
+    Statement::Statement() : content(),printer(cout) {} // note this printer initialization
+	void Statement::execute() {
+		Timer t; t.start();
+		try {
+			_execute();
+			t.stop(); printer << t.paren_str() << endl;
+		} catch (const MeError::MeError &e) {
+			printer << e.str() << endl;
+		} catch (const exception &e) {
+			printer << e.what() << endl;
+		}
+	}
 	void Statement::set_manager(Manager *_man) {
 		man = _man;
 	}
@@ -46,12 +59,35 @@ namespace MeInt {
         return ss.str();
     }
     void CreateTableStatement::print() const {
-        *printer << str() << endl;
+        printer << str() << endl;
     }
-    void CreateTableStatement::execute() { // do a lot of check
-        // TODO
-        // currently just print
-        print();
+    void CreateTableStatement::_execute() { // do a lot of check
+		// Assume by lexer & parser , the identifiers are valid identifier
+
+		// check table_name
+		if (man->cat.tables.count(table_name)) throw MeError::MeError(
+			"Invalid Operation",
+			"table '" + table_name + "' already exists"
+		);
+
+		// check cols
+		size_t col_num = cols.size();
+		if (col_num == 0) throw MeError::MeError(
+			"Invalid Table Definition",
+			"no columns in table"
+		);
+		if (col_num > 32) throw MeError::MeError(
+			"Invalid Table Definition",
+			"too many (" + to_str(col_num) + " > 32) columns"
+		);
+		pair<size_t,size_t> l = calc_len(cols);
+		if (l.second > block_size) throw MeError::MeError(
+			"Invalid Table Definition",
+			"tuple total len = " + to_str(l.second) + " cannot fit into a block"
+		);
+		vector<string> names(col_num);
+		for (size_t i=0;i<col_num;++i) names[i] = cols[i].col_name;
+
     }
     void CreateTableStatement::give_order() {
         for (size_t i=0;i<cols.size();++i) cols[i].ord = i;
@@ -67,7 +103,7 @@ namespace MeInt {
         return ss.str();
     }
     void DropTableStatement::print() const {
-        *printer << str() << endl;
+        printer << str() << endl;
     }
     void DropTableStatement::execute() {
         // TODO
@@ -88,7 +124,7 @@ namespace MeInt {
         return ss.str();
     }
     void CreateIndexStatement::print() const {
-        *printer << str() << endl;
+        printer << str() << endl;
     }
     void CreateIndexStatement::execute() {
         // TODO
@@ -106,7 +142,7 @@ namespace MeInt {
         return ss.str();
     }
     void DropIndexStatement::print() const {
-        *printer << str() << endl;
+        printer << str() << endl;
     }
     void DropIndexStatement::execute() {
         // TODO
@@ -129,7 +165,7 @@ namespace MeInt {
         return ss.str();
     }
     void SelectStatement::print() const {
-        *printer << str() << endl;
+        printer << str() << endl;
     }
     void SelectStatement::execute() {
         // TODO
@@ -151,7 +187,7 @@ namespace MeInt {
         return ss.str();
     }
     void InsertStatement::print() const {
-        *printer << str() << endl;
+        printer << str() << endl;
     }
     void InsertStatement::execute() {
         // TODO
@@ -172,7 +208,7 @@ namespace MeInt {
         return ss.str();
     }
     void DeleteStatement::print() const {
-        *printer << str() << endl;
+        printer << str() << endl;
     }
     void DeleteStatement::execute() {
         // TODO
@@ -191,7 +227,7 @@ namespace MeInt {
         return ss.str();
     }
     void ExecfileStatement::print() const {
-        *printer << str() << endl;
+        printer << str() << endl;
     }
     void ExecfileStatement::execute() {
         // TODO
@@ -205,7 +241,7 @@ namespace MeInt {
 		return colorful("show tables statement",default_color);
 	}
 	void ShowTablesStatement::print() const {
-		*printer << str() << endl;
+		printer << str() << endl;
 	}
 	void ShowTablesStatement::_execute() {
 		const map<string,TableInfo> &mp = man->cat.tables;
@@ -215,11 +251,6 @@ namespace MeInt {
 		res.print(cout);
 		res.finish();
 	}
-	void ShowTablesStatement::execute() {
-		Timer t; t.start();
-		_execute();
-		t.stop(); cout << t.paren_str() << endl;
-	}
 
 	// implement class ShowIndexesStatement
 	ShowIndexesStatement::ShowIndexesStatement() {}
@@ -227,7 +258,7 @@ namespace MeInt {
 		return colorful("show indexes statement",default_color);
 	}
 	void ShowIndexesStatement::print() const {
-		*printer << str() << endl;
+		printer << str() << endl;
 	}
 	void ShowIndexesStatement::_execute() {
 		const map<string,TableInfo> &tab = man->cat.tables;
@@ -246,10 +277,5 @@ namespace MeInt {
 		}
 		res.print(cout);
 		res.finish();
-	}
-	void ShowIndexesStatement::execute() {
-		Timer t; t.start();
-		_execute();
-		t.stop(); cout << t.paren_str() << endl;
 	}
 }

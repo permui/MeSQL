@@ -218,9 +218,10 @@ namespace MeMan {
 
 	// implementm class Recorder
 	Recorder::Recorder(Manager &_man,TableInfo &_ti) : man(_man),ti(_ti),in_len(0),out_len(0) {
-		for (const TableColumnDef &col:ti.def.col_def) in_len += col.col_spec.len;
-		out_len = in_len + sizeof (size_t) * 3;
-		if (out_len > block_size) throw MeError::MeInternalError(
+		pair<size_t,size_t> l = calc_len(ti.def.col_def);
+		in_len = l.first,out_len = l.second;
+		if (out_len > block_size) throw MeError::MeError(
+			InternalError,
 			"cannot place tuple of table '" + ti.def.table_name + "' into one block, in_len = " + to_str(in_len)
 		);
 	}
@@ -251,7 +252,8 @@ namespace MeMan {
 		return ret;
 	}
 	size_t Recorder::place_record(const vector<Literal> &rec) {
-		if (!ti.fit_tuple(rec)) throw MeError::MeInternalError(
+		if (!ti.fit_tuple(rec)) throw MeError::MeError(
+			InternalError,
 			"Recorder::place_record got unfit tuple"
 		);
 		Block head = man.buf.get_block(ti.path,0,false);
@@ -344,12 +346,14 @@ namespace MeMan {
 		the.unpin();
 	}
 	template<typename T> void Recorder::embed(const T &val,size_t len,Block &blo) {
-		throw MeError::MeInternalError(
+		throw MeError::MeError(
+			InternalError,
 			"unspecialized Recorder::embed should not be called"
 		);
 	}
 	template<typename T> void Recorder::parse(T &val,size_t len,Block &blo) {
-		throw MeError::MeInternalError(
+		throw MeError::MeError(
+			InternalError,
 			"unspecialized Recorder::parse should not be called"
 		);
 	}

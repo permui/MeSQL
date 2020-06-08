@@ -29,14 +29,15 @@ namespace MeInt {
     class Statement {
     protected:
         string content;
-        ostream *printer;
+        ostream &printer;
 		Manager *man;
     public:
         Statement();
         virtual ~Statement() {}
         virtual string str() const = 0;
         virtual void print() const = 0;
-        virtual void execute() = 0; // execute statement and output result to stdout
+        virtual void _execute() = 0; // _execute statement and output result to stdout
+		virtual void execute();
 		void set_manager(Manager *_man);
     };
 
@@ -49,7 +50,7 @@ namespace MeInt {
         CreateTableStatement(const string &_table_name,const vector<TableColumnDef> &_cols,const string &_primary_key);
         string str() const;
         void print() const;
-        void execute();
+        void _execute();
         void give_order();
     };
 

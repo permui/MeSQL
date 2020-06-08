@@ -236,4 +236,13 @@ namespace MeCat {
 		for (pair<const string,IndexInfo> &pr:indexes) 
 			pr.second.col = tables.at(pr.second.def.table_name).def.col_def.at(pr.second.def.col_ord);
 	}
+
+	pair<size_t,size_t> calc_len(const vector<TableColumnDef> &col_def) {
+		pair<size_t,size_t> ret(0,0);
+		size_t &in_len = ret.first;
+		size_t &out_len = ret.second;
+		for (const TableColumnDef &col:col_def) in_len += col.col_spec.len;
+		out_len = in_len + sizeof (size_t) * 3;
+		return ret;
+	}
 }

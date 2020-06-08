@@ -66,7 +66,10 @@ namespace MeBuf {
 			flag = true;
 			break;
 		}
-		if (!flag) throw MeError::MeInternalError("hash table erase key not exists");
+		if (!flag) throw MeError::MeError(
+			InternalError,
+			"hash table erase key not exists"
+		);
 	}
 	void HashTable::insert(const BlockSpec &key,buffer_index_t val) {
 		g[key.hash_index].emplace_front(key,val);
@@ -96,7 +99,10 @@ namespace MeBuf {
 			flag = true;
 			break;
 		}
-		if (!flag) throw MeError::MeInternalError("file table erase key not exists");
+		if (!flag) throw MeError::MeError(
+			InternalError,
+			"file table erase key not exists"
+		);
 	}
 
 	// implement class Block
@@ -116,7 +122,8 @@ namespace MeBuf {
 	}
 	template<typename T> void Block::write(const T &x) {
 		const size_t siz = sizeof (T);
-		if (siz > block_size || pos + siz > block_size) throw MeError::MeInternalError(
+		if (siz > block_size || pos + siz > block_size) throw MeError::MeError(
+			InternalError,
 			"Block::write error, pos = " + MeType::to_str(pos) + " siz = " + MeType::to_str(siz)
 		);
 		memcpy(data + pos,&x,siz);
@@ -124,7 +131,8 @@ namespace MeBuf {
 	}
 	template<typename T> void Block::read(T &x) {
 		const size_t siz = sizeof (T);
-		if (siz > block_size || pos + siz > block_size) throw MeError::MeInternalError(
+		if (siz > block_size || pos + siz > block_size) throw MeError::MeError(
+			InternalError,
 			"Block::read error, pos = " + MeType::to_str(pos) + " siz = " + MeType::to_str(siz)
 		);
 		memcpy(&x,data + pos,siz);
@@ -137,27 +145,31 @@ namespace MeBuf {
 	}
 	template<class T> void fake() {
 		const size_t siz = sizeof (T);
-		if (siz > block_size || pos + size > block_size) throw MeError::MeInternalError(
+		if (siz > block_size || pos + size > block_size) throw MeError::MeError(
+			InternalError,
 			"fake fail, pos = " + MeType::to_str(pos) + " siz = " + MeType::to_str(siz)
 		);
 		pos += siz;
 	}
 	void Block::raw_write(const void *from,size_t len) {
-		if (len > block_size || pos + len > block_size) throw MeError::MeInternalError(
+		if (len > block_size || pos + len > block_size) throw MeError::MeError(
+			InternalError,
 			"Block::raw_write error, too long, pos = " + MeType::to_str(pos) + " siz = " + MeType::to_str(len)
 		);
 		memcpy(data + pos,from,len);
 		pos += len;
 	}
 	void Block::raw_read(void *to,size_t len) {
-		if (len > block_size || pos + len > block_size) throw MeError::MeInternalError(
+		if (len > block_size || pos + len > block_size) throw MeError::MeError(
+			InternalError,
 			"Block::raw_read error, too long, pos = " + MeType::to_str(pos) + " siz = " + MeType::to_str(len)
 		);
 		memcpy(to,data + pos,len);
 		pos += len;
 	}
 	void Block::raw_fill(char c,size_t len) {
-		if (len > block_size || pos + len > block_size) throw MeError::MeInternalError(
+		if (len > block_size || pos + len > block_size) throw MeError::MeError(
+			InternalError,
 			"Block::raw_fill error, too long, pos = " + MeType::to_str(pos) + " siz = " + MeType::to_str(len)
 		);
 		memset(data + pos,c,len);
@@ -186,7 +198,10 @@ namespace MeBuf {
 	}
 	size_t BufferManager::read_block(const BlockSpec &bls,char *to) {
 		ifstream f(bls.file_path);
-		if (f.fail()) throw MeError::MeInternalError("cannot open db file '" + bls.file_path + "'");
+		if (f.fail()) throw MeError::MeError(
+			InternalError,
+			"cannot open db file '" + bls.file_path + "'"
+		);
 		memset(to,0,block_size);
 		f.seekg(block_size * bls.ord,f.beg);
 		f.read(to,block_size);
@@ -194,10 +209,16 @@ namespace MeBuf {
 	}
 	void BufferManager::write_block(const BlockSpec &bls,char *from) {
 		ofstream f(bls.file_path);
-		if (f.fail()) throw MeError::MeInternalError("cannot open db file '" + bls.file_path + "'");
+		if (f.fail()) throw MeError::MeError(
+			InternalError,
+			"cannot open db file '" + bls.file_path + "'"
+		);
 		f.seekp(block_size * bls.ord,f.beg);
 		f.write(from,block_size);
-		if (f.fail()) throw MeError::MeInternalError("fail write db file '" + bls.file_path + "'");
+		if (f.fail()) throw MeError::MeError(
+			InternalError,
+			"fail write db file '" + bls.file_path + "'"
+		);
 	}
 	Block BufferManager::get_block(const string &_file_path,size_t _ord,bool create_if_not_exists) {
 		BlockSpec bls(_file_path,_ord);
@@ -254,7 +275,8 @@ namespace MeBuf {
 		info[index] = Info();
 	}
 	void BufferManager::discard_one() {
-		if (uplist.empty()) throw MeError::MeInternalError(
+		if (uplist.empty()) throw MeError::MeError(
+			InternalError,
 			"cannot discard one in buffer, because there is no unpinned block"
 		);
 		del_index(uplist.front(),true);

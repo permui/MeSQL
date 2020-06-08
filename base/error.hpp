@@ -18,16 +18,12 @@ namespace MeError {
 
 	class MeError {
 	protected:
+		string pre;
 		string msg;
 	public:
 		MeError();
 		MeError(const string &_msg);
-		string str() const;
-	};
-
-	class MeInternalError : public MeError {
-	public:
-		using MeError::MeError;
+		MeError(const string &_pre,const string &_msg);
 		string str() const;
 	};
 

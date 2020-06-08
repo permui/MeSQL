@@ -123,4 +123,18 @@ namespace MeInfo {
     string InsertTuples::str() const {
         return "InsertTuples::str() is not implemented";
     }
+
+
+}
+
+namespace MeGad {
+
+ 	template<typename T> bool check_unique(vector<T> vec) {
+		size_t siz = vec.size();
+		if (siz <= 1) return true;
+		sort(vec.begin(),vec.end());
+		for (size_t i=0;i+1<siz;++i) if (vec[i] == vec[i+1]) return false;
+		return true;
+	}
+
 }
