@@ -26,6 +26,7 @@ namespace MeType {
 	int DataTypeLen(DataType dtype); // if unknown -1
     string DataTypeStr(DataType dtype);
     string CompareOpStr(CompareOp op);
+	template<typename T> string to_str(const T &x);
 }
 
 namespace MeInfo {

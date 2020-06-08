@@ -12,6 +12,7 @@
 #include <cassert>
 #include <cstring>
 #include <algorithm>
+#include "../base/base.hpp"
 #include "../config.hpp"
 #include "buffer.hpp"
 #include "../base/error.hpp"
@@ -100,17 +101,72 @@ namespace MeBuf {
 
 	// implement class Block
 	Block::Block(BufferManager &_buf,buffer_index_t _index,char *_data) : 
-		buf(_buf),index(_index),data(_data) {}
+		buf(_buf),index(_index),pos(0),data(_data) {}
 	void Block::ink() {
 		buf.ink(index);
 	}
 	void Block::unpin() {
 		buf.unpin(index);
 	}
+	size_t Block::tell() const {
+		return pos;
+	}
+	void Block::seek(size_t _pos) {
+		pos = _pos;
+	}
+	template<typename T> void Block::write(const T &x) {
+		const size_t siz = sizeof (T);
+		if (siz > block_size || pos + siz > block_size) throw MeError::MeInternalError(
+			"Block::write error, pos = " + MeType::to_str(pos) + " siz = " + MeType::to_str(siz)
+		);
+		memcpy(data + pos,&x,siz);
+		pos += siz;
+	}
+	template<typename T> void Block::read(T &x) {
+		const size_t siz = sizeof (T);
+		if (siz > block_size || pos + siz > block_size) throw MeError::MeInternalError(
+			"Block::read error, pos = " + MeType::to_str(pos) + " siz = " + MeType::to_str(siz)
+		);
+		memcpy(&x,data + pos,siz);
+		pos += siz;
+	}
+	template<class T> T Block::read() {
+		T ret;
+		read(ret);
+		return ret;
+	}
+	template<class T> void fake() {
+		const size_t siz = sizeof (T);
+		if (siz > block_size || pos + size > block_size) throw MeError::MeInternalError(
+			"fake fail, pos = " + MeType::to_str(pos) + " siz = " + MeType::to_str(siz)
+		);
+		pos += siz;
+	}
+	void Block::raw_write(const void *from,size_t len) {
+		if (len > block_size || pos + len > block_size) throw MeError::MeInternalError(
+			"Block::raw_write error, too long, pos = " + MeType::to_str(pos) + " siz = " + MeType::to_str(len)
+		);
+		memcpy(data + pos,from,len);
+		pos += len;
+	}
+	void Block::raw_read(void *to,size_t len) {
+		if (len > block_size || pos + len > block_size) throw MeError::MeInternalError(
+			"Block::raw_read error, too long, pos = " + MeType::to_str(pos) + " siz = " + MeType::to_str(len)
+		);
+		memcpy(to,data + pos,len);
+		pos += len;
+	}
+	void Block::raw_fill(char c,size_t len) {
+		if (len > block_size || pos + len > block_size) throw MeError::MeInternalError(
+			"Block::raw_fill error, too long, pos = " + MeType::to_str(pos) + " siz = " + MeType::to_str(len)
+		);
+		memset(data + pos,c,len);
+		pos += len;
+	}
 
 	// implement class BufferManager::Info
-	BufferManager::Info::Info() : bls("",0),inked(false),pinned(false) {}
-	BufferManager::Info::Info(const BlockSpec &_bls,bool _inked,bool _pinned) : 
+	BufferManager::Info::Info() : bls("",0),inked(false),pinned(0) {}
+	BufferManager::Info::Info(const BlockSpec &_bls,bool _inked,int _pinned) : 
 		bls(_bls),inked(_inked),pinned(_pinned) {}
 
 	// implement class BufferManager
@@ -172,7 +228,7 @@ namespace MeBuf {
 		buffer_index_t ret = pol[cur++];
 		list_node[ret] = uplist.end();
 		use_node[ret] = uselist.insert(uselist.end(),ret);
-		info[ret] = Info(bls,false,true);
+		info[ret] = Info(bls,false,1);
 		return ret;
 	}
 	void BufferManager::flush_index(buffer_index_t index) {
@@ -222,15 +278,17 @@ namespace MeBuf {
 		info[index].inked = true;
 	}
 	void BufferManager::pin(buffer_index_t index) {
-		if (info[index].pinned) return;
-		info[index].pinned = true;
+		++info[index].pinned;
+		if (info[index].pinned > 1) return;
+		assert(info[index].pinned == 1);
 		assert(list_node[index] != uplist.end());
 		uplist.erase(list_node[index]);
 		list_node[index] = uplist.end();
 	}
 	void BufferManager::unpin(buffer_index_t index) {
-		if (!info[index].pinned) return;
-		info[index].pinned = false;
+		--info[index].pinned;
+		if (info[index].pinned > 0) return;
+		assert(info[index].pinned == 0);
 		assert(list_node[index] == uplist.end());
 		list_node[index] = uplist.insert(uplist.end(),index);
 	}

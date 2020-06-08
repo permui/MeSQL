@@ -78,6 +78,7 @@ namespace MeBuf {
 	private:
 		BufferManager &buf;
 		buffer_index_t index;
+		size_t pos;
 	public:
 		char *data; // data null means not exists and not created
 
@@ -85,6 +86,15 @@ namespace MeBuf {
 		void ink();
 		void pin();
 		void unpin();
+		size_t tell() const;
+		void seek(size_t _pos);
+		template<typename T> void write(const T &x);
+		template<typename T> void read(T &x);
+		template<class T> T read();
+		template<class T> void fake();
+		void raw_write(const void *from,size_t len);
+		void raw_read(void *to,size_t len);
+		void raw_fill(char c,size_t len);
 	};
 
 	class BufferManager {
@@ -107,9 +117,9 @@ namespace MeBuf {
 		public:
 			BlockSpec bls;
 			bool inked;
-			bool pinned;
+			int pinned;
 			Info();
-			Info(const BlockSpec &_bls,bool _inked,bool _pinned);
+			Info(const BlockSpec &_bls,bool _inked,int _pinned);
 		};
 		Info info[block_num];
 	public:

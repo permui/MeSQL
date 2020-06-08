@@ -70,12 +70,30 @@ namespace MeMan {
 	private:
 		Manager &man;
 		TableInfo &ti;
+		size_t in_len;
+		size_t out_len;
+		class ptr {
+		public:
+			size_t pre_tup;
+			size_t nxt_tup;
+			size_t nxt_spa;
+
+			ptr();
+			ptr(size_t _pre_tup,size_t _nxt_tup,size_t _nxt_spa);
+		};
 	public:
 		// _ti should be from CatalogManager
 		Recorder(Manager &_man,TableInfo &_ti);
+		size_t next_valid_pos(size_t pos) const;
 		void init_table();
+		// return position in file
+		vector<Literal> get_record(size_t pt);
 		size_t place_record(const vector<Literal> &rec);
 		void erase_record_at(size_t pt);
+		// they will be specialized
+		// just write / read, without any check
+		template<typename T> void embed(const T &val,size_t len,Block &blo);
+		template<typename T> void parse(T &val,size_t len,Block &blo);
 	};
 
 	class Manager {

@@ -40,6 +40,13 @@ namespace MeType {
         return "UNDEFINED OPERATOR";
     }
 
+	template<typename T> string to_str(const T &x) {
+		static stringstream ss;
+		ss.str("");
+		ss << x;
+		return ss.str();
+	}
+
 }
 
 namespace MeInfo {

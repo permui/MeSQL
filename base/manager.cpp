@@ -13,6 +13,7 @@
 #include <cstring>
 #include <algorithm>
 #include "manager.hpp"
+#include "error.hpp"
 #include "../config.hpp"
 
 static const char VERT = '|';
@@ -35,7 +36,6 @@ namespace MeMan {
 	}
 	string TmpManager::new_tmp() {
 		string ret = tmp_name(++cnt);
-		ofstream(ret); // create the file
 		return ret;
 	}
 	void TmpManager::ret_tmp(const string &s) {
@@ -211,15 +211,192 @@ namespace MeMan {
 		return ret;
 	}
 
-	// implement class Recorder
-	Recorder::Recorder(Manager &_man,TableInfo &_ti) : man(_man),ti(_ti) {}
+	// implement class Recorder::ptr
+	Recorder::ptr::ptr() : pre_tup(0),nxt_tup(0),nxt_spa(0) {}
+	Recorder::ptr::ptr(size_t _pre_tup,size_t _nxt_tup,size_t _nxt_spa) :
+		pre_tup(_pre_tup),nxt_tup(_nxt_tup),nxt_spa(_nxt_spa) {}
+
+	// implementm class Recorder
+	Recorder::Recorder(Manager &_man,TableInfo &_ti) : man(_man),ti(_ti),in_len(0),out_len(0) {
+		for (const TableColumnDef &col:ti.def.col_def) in_len += col.col_spec.len;
+		out_len = in_len + sizeof (size_t) * 3;
+		if (out_len > block_size) throw MeError::MeInternalError(
+			"cannot place tuple of table '" + ti.def.table_name + "' into one block, in_len = " + to_str(in_len)
+		);
+	}
+	size_t Recorder::next_valid_pos(size_t pos) const {
+		size_t seg = pos / block_size;
+		size_t off = pos % block_size;
+		if (off + out_len + out_len > block_size) return block_size * (seg + 1);
+		return pos + out_len;
+	}
 	void Recorder::init_table() {
 		ti.path = TABLE_DIR + ti.def.table_name + TABLE_SUF;
 		Block blo = man.buf.get_block(ti.path,0,true);
+		ptr init_ptr(0,0,block_size);
+		blo.seek(0),blo.write(init_ptr);
+		blo.unpin();
+	}
+	vector<Literal> Recorder::get_record(size_t pt) {
+		size_t seg = pt / block_size;
+		size_t off = pt % block_size;
+		Block the = man.buf.get_block(ti.path,seg,false);
+		assert(the.data);
+		the.seek(off);
+		the.fake<ptr>();
+		size_t siz = ti.def.col_def.size();
+		vector<Literal> ret(siz);
+		for (size_t i=0;i<siz;++i) parse(ret[i],ti.def.col_def[i].col_spec.len,the);
+		the.unpin();
+		return ret;
+	}
+	size_t Recorder::place_record(const vector<Literal> &rec) {
+		if (!ti.fit_tuple(rec)) throw MeError::MeInternalError(
+			"Recorder::place_record got unfit tuple"
+		);
+		Block head = man.buf.get_block(ti.path,0,false);
+		head.ink();
+		assert(head.data);
+		ptr head_p,the_p;
+		head.seek(0),head.read(head_p);
+		size_t pos = head_p.nxt_spa;
+		size_t seg = pos / block_size;
+		size_t off = pos % block_size;
+		Block the = man.buf.get_block(ti.path,seg,true);
+		the.ink();
+		the.seek(off),the.read(the_p);
+		if (the_p.nxt_spa == 0) the_p.nxt_spa = next_valid_pos(pos);
+		size_t siz = rec.size();
+		for (size_t i=0;i<siz;++i) embed(rec[i],ti.def.col_def[i].col_spec.len,the);
+		// adjust nxt_spa
+		head_p.nxt_spa = the_p.nxt_spa;
+		the_p.nxt_spa = 0;
+		// adjust tup
+		the_p.pre_tup = 0;
+		the_p.nxt_tup = head_p.nxt_tup;
+		head_p.nxt_tup = pos;
+		// adjust tup.nxt_tup
+		if (the_p.nxt_tup != 0) {
+			size_t nxt_seg = the_p.nxt_tup / block_size;
+			size_t nxt_off = the_p.nxt_tup % block_size;
+			Block nxt = man.buf.get_block(ti.path,nxt_seg,false);
+			assert(nxt.data);
+			nxt.ink();
+			ptr nxt_p;
+			nxt.seek(nxt_off),nxt.read(nxt_p);
+			nxt_p.pre_tup = pos;
+			nxt.seek(nxt_off),nxt.write(nxt_p);
+			nxt.unpin();
+		}
+		head.seek(0),head.write(head_p);
+		the.seek(off),the.write(the_p);
+		head.unpin();
+		the.unpin();
+		return pos;
+	}
+	void Recorder::erase_record_at(size_t pt) {
+		size_t seg = pt / block_size;
+		size_t off = pt % block_size;
+		Block head = man.buf.get_block(ti.path,0,false);
+		Block the = man.buf.get_block(ti.path,seg,false);
+		assert(head.data);
+		assert(the.data);
+		head.ink();
+		the.ink();
+		ptr head_p,the_p;
+		head.seek(0),head.read(head_p);
+		the.seek(off),the.read(the_p);
 
+		// deal with pre
+		size_t pre_seg = the_p.pre_tup / block_size;
+		size_t pre_off = the_p.pre_tup % block_size;
+		Block pre = man.buf.get_block(ti.path,pre_seg,false);
+		assert(pre.data);
+		pre.ink();
+		ptr pre_p;
+		pre.seek(pre_off),pre.read(pre_p);
+		pre_p.nxt_tup = the_p.nxt_tup;
+		pre.seek(pre_off),pre.write(pre_p);
+		pre.unpin();
+
+		// deal with nxt
+		if (the_p.nxt_tup) {
+			size_t nxt_seg = the_p.nxt_tup / block_size;
+			size_t nxt_off = the_p.nxt_tup % block_size;
+			Block nxt = man.buf.get_block(ti.path,nxt_seg,false);
+			assert(nxt.data);
+			nxt.ink();
+			ptr nxt_p;
+			nxt.seek(nxt_off),nxt.read(nxt_p);
+			nxt_p.pre_tup = the_p.pre_tup;
+			nxt.seek(nxt_off),nxt.write(nxt_p);
+			nxt.unpin();
+		}
+
+		the_p.pre_tup = the_p.nxt_tup = 0;
+		the_p.nxt_spa = head_p.nxt_spa;
+		head_p.nxt_spa = pt;
+
+		head.seek(0),head.write(head_p);
+		the.seek(off),the.write(the_p);
+		the.raw_fill(0,in_len); // erase the payload
+		head.unpin();
+		the.unpin();
+	}
+	template<typename T> void Recorder::embed(const T &val,size_t len,Block &blo) {
+		throw MeError::MeInternalError(
+			"unspecialized Recorder::embed should not be called"
+		);
+	}
+	template<typename T> void Recorder::parse(T &val,size_t len,Block &blo) {
+		throw MeError::MeInternalError(
+			"unspecialized Recorder::parse should not be called"
+		);
+	}
+	template<> void Recorder::embed<Literal>(const Literal &val,size_t len,Block &blo) {
+		switch (val.dtype) {
+			case DataType::INT : {
+				assert(len == sizeof (val.int_val));
+				blo.write(val.int_val);
+				break;
+			}
+			case DataType::FLOAT : {
+				assert(len == sizeof (val.float_val));
+				blo.write(val.float_val);
+				break;
+			}
+			case DataType::CHAR : {
+				size_t siz = val.char_val.length();
+				assert(len >= siz);
+				blo.raw_write(val.char_val.c_str(),siz);
+				blo.raw_fill(0,len-siz);
+				break;
+			}
+		}
+	}
+	template<> void Recorder::parse<Literal>(Literal &val,size_t len,Block &blo) {
+		switch (val.dtype) {
+			case DataType::INT : {
+				assert(len == sizeof (val.int_val));
+				blo.read(val.int_val);
+				break;
+			}
+			case DataType::FLOAT : {
+				assert(len == sizeof (val.float_val));
+				blo.read(val.float_val);
+				break;
+			}
+			case DataType::CHAR : {
+				static char aux[block_size],*r;
+				blo.raw_read(aux,len);
+				for (r=aux+len;r!=aux && *(r-1)==0;--r);
+				val = Literal(string(aux,r));
+				break;
+			}
+		}
 	}
 
-	// implement class Manager
+	// implement class Manageri
 	Manager::Manager() : cat(),tmp(*this),buf() {}
 	Resulter Manager::new_resulter() {
 		return Resulter(*this);

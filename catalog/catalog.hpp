@@ -20,6 +20,7 @@ using namespace std;
 namespace MeCat {
 
 	using namespace MeType;
+	using namespace MeInfo;
 
     /* Column specification : col_spec = (col_type col_constraint) + is_primary_key */
     class TableColumnSpec { // fixed length
@@ -32,6 +33,7 @@ namespace MeCat {
 		TableColumnSpec();
         TableColumnSpec(DataType _data_type,char_size_t _len,bool _is_unique,bool _is_primary_key);
         string str() const;
+		bool fit(const Literal &lit) const;
     };
 
     /* Column definition : col_defi = (col_name col_spec) */
@@ -74,19 +76,17 @@ namespace MeCat {
 
 		TableInfo();
 		TableInfo(const TableDef &_def,const string &_path);
-		void load_from_ss(stringstream&);
-		void dump_to_ss(stringstream&);
+		bool fit_tuple(const vector<Literal> &vec) const;
 	};
 
 	class IndexInfo {
 	public:
 		IndexDef def;
 		string path;
+		TableColumnDef col;
 
 		IndexInfo();
 		IndexInfo(const IndexDef &_def,const string &_path);
-		void load_from_ss(stringstream&);
-		void dump_to_ss(stringstream&);
 	};
 
 	class CatalogManager { // should be implemented in map<name,Info> TODO

@@ -155,6 +155,11 @@ namespace MeCat {
     string TableColumnSpec::str() const {
         return "TableColumnSpec::str() is not implemented";
     }
+	bool TableColumnSpec::fit(const Literal &lit) const {
+		if (data_type != lit.dtype) return false;
+		if (data_type == DataType::CHAR) return lit.char_val.length() <= len;
+		return true;
+	}
 
     // implement class TableColumnDef
 	TableColumnDef::TableColumnDef() : ord(0),col_name(),col_spec() {}
@@ -188,9 +193,17 @@ namespace MeCat {
 	// implement class TableInfo
 	TableInfo::TableInfo() : def(),path() {}
 	TableInfo::TableInfo(const TableDef &_def,const string &_path) : def(_def),path(_path) {}
+	bool TableInfo::fit_tuple(const vector<Literal> &vec) const {
+		size_t len = def.col_def.size();
+		if (len != vec.size()) return false;
+		for (size_t i=0;i<len;++i) if (!def.col_def[i].col_spec.fit(vec[i])) return false;
+		return true;
+	}
 
-	IndexInfo::IndexInfo() : def(),path() {}
-	IndexInfo::IndexInfo(const IndexDef &_def,const string &_path) : def(_def),path(_path) {}
+	// implement class IndexInfo
+	IndexInfo::IndexInfo() : def(),path(),col() {}
+	IndexInfo::IndexInfo(const IndexDef &_def,const string &_path) : def(_def),path(_path),col() {}
+
 
 	// implement class CatalogManager
 	CatalogManager::CatalogManager() : tables(),indexes() {
@@ -220,5 +233,7 @@ namespace MeCat {
 		delete str;
 		parse_from_stream(tables,ss);
 		parse_from_stream(indexes,ss);
+		for (pair<const string,IndexInfo> &pr:indexes) 
+			pr.second.col = tables.at(pr.second.def.table_name).def.col_def.at(pr.second.def.col_ord);
 	}
 }

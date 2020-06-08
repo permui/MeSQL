@@ -232,8 +232,8 @@ create_table_col_spec:
     ;
 
 create_table_col_type:
-    "int" { $$ = TableColumnSpec(DataType::INT,0,false,false); }
-    | "float" { $$ = TableColumnSpec(DataType::FLOAT,0,false,false); }
+    "int" { $$ = TableColumnSpec(DataType::INT,4,false,false); }
+    | "float" { $$ = TableColumnSpec(DataType::FLOAT,4,false,false); }
     | "char" "(" NUMBER ")" 
         {
             string num = $3;
