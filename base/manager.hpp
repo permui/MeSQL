@@ -22,13 +22,15 @@ namespace MeMan {
 	using namespace MeCat;
 	using namespace MeBuf;
 	using namespace MeInfo;
+	class Manager;
 
 	class TmpManager {
 	private:
+		Manager &man;
 		size_t cnt;
 		string tmp_name(size_t x) const;
 	public:
-		TmpManager();
+		TmpManager(Manager &_man);
 		~TmpManager();
 		string new_tmp();
 		void ret_tmp(const string &);
@@ -62,6 +64,18 @@ namespace MeMan {
 		void print(ostream &os); // either type of print only once for a Resulter
 		// if provided name is empty, then original name of provided col is used
 		void print(ostream &os,vector<pair<size_t,string>> prt_spec);
+	};
+
+	class Recorder {
+	private:
+		Manager &man;
+		TableInfo &ti;
+	public:
+		// _ti should be from CatalogManager
+		Recorder(Manager &_man,TableInfo &_ti);
+		void init_table();
+		size_t place_record(const vector<Literal> &rec);
+		void erase_record_at(size_t pt);
 	};
 
 	class Manager {

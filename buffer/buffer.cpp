@@ -22,26 +22,30 @@ namespace MeBuf {
 	BlockSpec::BlockSpec(const string &_file_path,size_t _ord) : file_path(_file_path),ord(_ord) {
 		reverse(file_path.begin(),file_path.end()); // for fast difference detection for performance
 		assert(ord < max_block_ord); // so further operation would not cause overflow
-		hash_index = hash() % hash_table_size;
+		const pair<size_t,size_t> pr = hash();
+		file_hash = pr.first % hash_table_size;
+		hash_index = pr.second % hash_table_size;
 	}
 	bool BlockSpec::operator== (const BlockSpec &b) const {
 		return file_path == b.file_path && ord == b.ord;
 	}
-	size_t BlockSpec::hash() const { // djb2 hash function ; not moded
+	pair<size_t,size_t> BlockSpec::hash() const { // djb2 hash function ; not moded
 		static stringstream ss;
 		ss.str("");
-		ss << ord << ":" << file_path;
-		size_t ret = 5381;
-		for (char c:ss.str()) ret = ret * 33 + c;
-		return ret;
+		size_t ret1 = 5381;
+		for (char c:file_path) ret1 = ret1 * 33 + c;
+		size_t ret2 = ret1 * 33 + ':';
+		ss << ord;
+		for (char c:ss.str()) ret2 = ret2 * 33 + c;
+		return {ret1,ret2};
 	}
 
 	// implement class HashTable
-	HashTable::Node::Node(const BlockSpec &_key) : key(_key),val(-1) {}
 	HashTable::Node::Node(const BlockSpec &_key,buffer_index_t _val) : key(_key),val(_val) {}
 	HashTable::HashTable() {}
 	bool HashTable::have_key(const BlockSpec &key) const {
 		for (const Node &v:g[key.hash_index]) if (v.key == key) return true;
+		return false;
 	}
 	buffer_index_t HashTable::at(const BlockSpec &key) const {
 		for (const Node &v:g[key.hash_index]) if (v.key == key) return v.val;
@@ -50,8 +54,8 @@ namespace MeBuf {
 	buffer_index_t& HashTable::operator[] (const BlockSpec &key) {
 		list<Node> &lis = g[key.hash_index];
 		for (Node &v:lis) if (v.key == key) return v.val;
-		lis.emplace_back(key);
-		return lis.back().val;
+		lis.emplace_front(key,-1);
+		return lis.front().val;
 	}
 	void HashTable::erase(const BlockSpec &key) {
 		bool flag = false;
@@ -61,11 +65,37 @@ namespace MeBuf {
 			flag = true;
 			break;
 		}
-		assert(flag);
 		if (!flag) throw MeError::MeInternalError("hash table erase key not exists");
 	}
 	void HashTable::insert(const BlockSpec &key,buffer_index_t val) {
 		g[key.hash_index].emplace_front(key,val);
+	}
+
+	// implement class FileTable
+	FileTable::Node::Node(const string &_key) : key(_key),val() {}
+	FileTable::FileTable() {}
+	bool FileTable::have_key(const BlockSpec &bs) const {
+		for (const Node &x:g[bs.file_hash]) if (x.key == bs.file_path) return true;
+		return false;
+	}
+	List& FileTable::operator[] (const BlockSpec &bs) {
+		for (Node &x:g[bs.file_hash]) if (x.key == bs.file_path) return x.val;
+		g[bs.file_hash].emplace_front(bs.file_path);
+		return g[bs.file_hash].front().val;
+	}
+	void FileTable::erase(const string &key) {
+		BlockSpec bs(key,0);
+		erase(bs);
+	}
+	void FileTable::erase(const BlockSpec &bs) {
+		list<Node> &lis = g[bs.file_hash];
+		bool flag = false;
+		for (list<Node>::iterator it=lis.begin();it!=lis.end();++it) if (it->key == bs.file_path) {
+			lis.erase(it);
+			flag = true;
+			break;
+		}
+		if (!flag) throw MeError::MeInternalError("file table erase key not exists");
 	}
 
 	// implement class Block
@@ -84,7 +114,7 @@ namespace MeBuf {
 		bls(_bls),inked(_inked),pinned(_pinned) {}
 
 	// implement class BufferManager
-	BufferManager::BufferManager() : uplist(),uselist(),cur(0),h() {
+	BufferManager::BufferManager() : uplist(),uselist(),cur(0),h(),f() {
 		fill(begin(list_node),end(list_node),uplist.end());
 		fill(begin(use_node),end(use_node),uselist.end());
 		iota(begin(pol),end(pol),0);
@@ -127,6 +157,8 @@ namespace MeBuf {
 		if (len || create_if_not_exists) {
 			buffer_index_t index = new_index(bls);
 			h.insert(bls,index); // assume by logic not exists
+			List &lis = f[bls];
+			fp[index] = lis.insert(lis.end(),index);
 			memcpy(m_data[index],aux,block_size);
 			Block ret = make_block(index);
 			if (len==0) ret.ink();
@@ -148,8 +180,8 @@ namespace MeBuf {
 		write_block(info[index].bls,m_data[index]);
 		info[index].inked = false;
 	}
-	void BufferManager::del_index(buffer_index_t index) {
-		flush_index(index);
+	void BufferManager::del_index(buffer_index_t index,bool flush) {
+		if (flush) flush_index(index);
 		if (list_node[index] != uplist.end()) {
 			uplist.erase(list_node[index]);
 			list_node[index] = uplist.end();
@@ -158,18 +190,30 @@ namespace MeBuf {
 		uselist.erase(use_node[index]);
 		use_node[index] = uselist.end();
 		--cur,pol[cur] = index;
-		h.erase(info[index].bls);
+		const BlockSpec &bls = info[index].bls;
+		h.erase(bls);
+		List &lis = f[bls];
+		lis.erase(fp[index]);
+		if (lis.empty()) f.erase(bls);
 		info[index] = Info();
 	}
 	void BufferManager::discard_one() {
 		if (uplist.empty()) throw MeError::MeInternalError(
 			"cannot discard one in buffer, because there is no unpinned block"
 		);
-		del_index(uplist.front());
+		del_index(uplist.front(),true);
 	}
 	void BufferManager::discard_all() {
 		vector<buffer_index_t> vec(uselist.begin(),uselist.end()); // since uselist is changing during del_index
-		for (buffer_index_t x:vec) del_index(x);
+		for (buffer_index_t x:vec) del_index(x,true);
+	}
+	void BufferManager::remove_file(const string &file_path) {
+		BlockSpec bls(file_path,0);
+		if (!f.have_key(bls)) return;
+		List lis = f[bls];
+		assert(!lis.empty());
+		for (buffer_index_t idx:lis) del_index(idx,false);
+		assert(!f.have_key(bls));
 	}
 	bool BufferManager::more() const {
 		return cur < block_num;

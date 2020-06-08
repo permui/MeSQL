@@ -12,8 +12,6 @@
 #include "catalog.hpp"
 #include "../config.hpp"
 
-#define CATA_FILE DB_FILES "catalog/catalog.cat"
-
 using namespace std;
 using namespace MeCat;
 

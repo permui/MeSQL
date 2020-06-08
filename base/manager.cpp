@@ -23,7 +23,7 @@ namespace MeMan {
 	using namespace MeBuf;
 
 	// implement class TmpManager
-	TmpManager::TmpManager() : cnt(0) {}
+	TmpManager::TmpManager(Manager &_man) : man(_man),cnt(0) {}
 	TmpManager::~TmpManager() {
 		for (size_t i=1;i<=cnt;++i) remove(tmp_name(i).c_str());
 	}
@@ -39,6 +39,7 @@ namespace MeMan {
 		return ret;
 	}
 	void TmpManager::ret_tmp(const string &s) {
+		man.buf.remove_file(s);
 		remove(s.c_str()); // delete the file
 	}
 
@@ -210,8 +211,16 @@ namespace MeMan {
 		return ret;
 	}
 
+	// implement class Recorder
+	Recorder::Recorder(Manager &_man,TableInfo &_ti) : man(_man),ti(_ti) {}
+	void Recorder::init_table() {
+		ti.path = TABLE_DIR + ti.def.table_name + TABLE_SUF;
+		Block blo = man.buf.get_block(ti.path,0,true);
+
+	}
+
 	// implement class Manager
-	Manager::Manager() : cat(),tmp(),buf() {}
+	Manager::Manager() : cat(),tmp(*this),buf() {}
 	Resulter Manager::new_resulter() {
 		return Resulter(*this);
 	}

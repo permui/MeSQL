@@ -20,15 +20,18 @@ namespace MeBuf {
 	class BufferManager;
 
 	typedef int buffer_index_t; // cannot be unsigned since -1 is used
+	typedef list<buffer_index_t> List;
+	typedef List::iterator itt;
 
 	class BlockSpec {
 	public:
 		string file_path;
 		size_t ord;
+		size_t file_hash;
 		size_t hash_index;
 
 		BlockSpec(const string &_file_path,size_t _ord);
-		size_t hash() const;
+		pair<size_t,size_t> hash() const;
 		bool operator== (const BlockSpec &b) const;
 	};
 
@@ -38,7 +41,6 @@ namespace MeBuf {
 			BlockSpec key;
 			buffer_index_t val; // initialize to -1
 
-			Node(const BlockSpec &_key);
 			Node(const BlockSpec &_key,buffer_index_t _val);
 		};
 		list<Node> g[hash_table_size];
@@ -51,6 +53,25 @@ namespace MeBuf {
 		buffer_index_t& operator[] (const BlockSpec &key);
 		void erase(const BlockSpec &key);
 		void insert(const BlockSpec &key,buffer_index_t val);
+	};
+
+	class FileTable {
+	private:
+		struct Node {
+			string key;
+			List val;
+
+			Node(const string &_key);
+		};
+		list<Node> g[hash_table_size];
+	
+	public:
+		FileTable();
+		bool have_key(const BlockSpec &bs) const;
+		List& operator[] (const BlockSpec &bs);
+		// this key must not from BlockSpec
+		void erase(const string &key);
+		void erase(const BlockSpec &bs);
 	};
 
 	class Block {
@@ -69,8 +90,6 @@ namespace MeBuf {
 	class BufferManager {
 	private:
 		// unpinned block index list ; for LRU
-		typedef list<buffer_index_t> List;
-		typedef List::iterator itt;
 		List uplist,uselist;
 		itt list_node[block_num],use_node[block_num];
 		// index pool
@@ -78,6 +97,9 @@ namespace MeBuf {
 		buffer_index_t cur;
 		
 		HashTable h;
+		FileTable f;
+
+		itt fp[block_num];
 
 		char m_data[block_num][block_size],aux[block_size];
 
@@ -112,9 +134,11 @@ namespace MeBuf {
 		Block get_block(const BlockSpec &bls,bool create_if_not_exists);
 		buffer_index_t new_index(const BlockSpec &bls);
 		void flush_index(buffer_index_t index); // just write it to disk
-		void del_index(buffer_index_t index); // flush and del, go back to pool
+		// flush (if flush = true) and del, go back to pool
+		void del_index(buffer_index_t index,bool flush);
 		void discard_one(); // choose appropriate block and del it ; throw InternalError if cannot
 		void discard_all(); // del all block out of pool
+		void remove_file(const string &file_path);
 		bool more() const;
 		void ink(buffer_index_t index);
 		void pin(buffer_index_t index);

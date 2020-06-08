@@ -23,6 +23,9 @@ static const size_t hash_table_size = 100003; // a prime number
 
 // path for directory db_files for code in one layer of folder
 #define DB_FILES "db_files/"
+#define CATA_FILE DB_FILES "catalog/catalog.cat"
+#define TABLE_DIR DB_FILES "table/"
+#define TABLE_SUF ".tab"
 
 // this should not be modified
 static const MeType::char_size_t max_CHAR_len = 255;

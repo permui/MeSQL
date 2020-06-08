@@ -25,7 +25,7 @@ namespace MeCat {
     class TableColumnSpec { // fixed length
     public:
         DataType data_type;
-        char_size_t len; // 0 if not needed
+        char_size_t len; // sizeof that data_type ( char -> N )
         bool is_unique;
         bool is_primary_key;
 
