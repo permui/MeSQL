@@ -46,7 +46,13 @@ namespace MeInfo {
         Literal(const string &_val);
         string str() const;
 		string str_unquoted() const;
+		bool operator< (const Literal &b) const;
+		bool operator== (const Literal &b) const;
+		bool null() const;
     };
+
+	bool CompareOpApply(const Literal &a,CompareOp op,const Literal &b);
+	template<typename T> bool CompareOpSpec(const T &a,CompareOp op,const T &b);
 
     class WhereCondItem {
     public:
@@ -59,12 +65,24 @@ namespace MeInfo {
         string str() const;
     };
 
+	class WhereCondOtem {
+	public:
+		col_num_t col_ord;
+		CompareOp op;
+		Literal lit;
+		bool has_index;
+
+		WhereCondOtem(col_num_t _col_ord,CompareOp _op,const Literal &_lit);
+	};
+
     class WhereCond {
     public:
         vector<WhereCondItem> items;
+		vector<WhereCondOtem> otems;
 
         WhereCond();
         WhereCond(const vector<WhereCondItem> &_items);
+		bool satisfy(const vector<Literal> &tup,bool logic_and);
         string str() const;
     };
 
@@ -84,6 +102,7 @@ namespace MeInfo {
 namespace MeGad {
 	
 	template<typename T> bool check_unique(vector<T> vec);
+
 }
 
 #endif

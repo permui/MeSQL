@@ -26,12 +26,16 @@ static const size_t hash_table_size = 100003; // a prime number
 #define CATA_FILE DB_FILES "catalog/catalog.cat"
 #define TABLE_DIR DB_FILES "table/"
 #define TABLE_SUF ".tab"
+#define INDEX_DIR DB_FILES "index/"
+#define INDEX_SUF ".idx"
 
 // this should not be modified
 static const MeType::char_size_t max_CHAR_len = 255;
 
 static const MeType::char_size_t max_tablename = 255 - 3;
 static const MeType::char_size_t max_indexname = 255;
+
+static const MeType::col_num_t max_col_num = 32;
 
 
 #define InternalError "InternalError"

@@ -21,6 +21,65 @@ static const char HORI = '-';
 static const char CORN = '+';
 
 namespace MeMan {
+
+	template<typename T> void Recorder::embed(const T &val,size_t len,Block &blo) {
+		throw MeError::MeError(
+			InternalError,
+			"unspecialized Recorder::embed should not be called"
+		);
+	}
+	template<typename T> void Recorder::parse(T &val,size_t len,Block &blo) {
+		throw MeError::MeError(
+			InternalError,
+			"unspecialized Recorder::parse should not be called"
+		);
+	}
+	template<> void Recorder::embed<Literal>(const Literal &val,size_t len,Block &blo) {
+		switch (val.dtype) {
+			case DataType::INT : {
+				assert(len == sizeof (val.int_val));
+				blo.write(val.int_val);
+				break;
+			}
+			case DataType::FLOAT : {
+				assert(len == sizeof (val.float_val));
+				blo.write(val.float_val);
+				break;
+			}
+			case DataType::CHAR : {
+				size_t siz = val.char_val.length();
+				assert(len >= siz);
+				blo.raw_write(val.char_val.c_str(),siz);
+				blo.raw_fill(0,len-siz);
+				break;
+			}
+		}
+	}
+	template<> void Recorder::parse<Literal>(Literal &val,size_t len,Block &blo) {
+		switch (val.dtype) {
+			case DataType::INT : {
+				assert(len == sizeof (val.int_val));
+				blo.read(val.int_val);
+				break;
+			}
+			case DataType::FLOAT : {
+				assert(len == sizeof (val.float_val));
+				blo.read(val.float_val);
+				break;
+			}
+			case DataType::CHAR : {
+				static char aux[block_size],*r;
+				blo.raw_read(aux,len);
+				for (r=aux+len;r!=aux && *(r-1)==0;--r);
+				val = Literal(string(aux,r));
+				break;
+			}
+		}
+	}
+
+}
+
+namespace MeMan {
 	using namespace MeBuf;
 
 	// implement class TmpManager
@@ -216,6 +275,9 @@ namespace MeMan {
 	Recorder::ptr::ptr(size_t _pre_tup,size_t _nxt_tup,size_t _nxt_spa) :
 		pre_tup(_pre_tup),nxt_tup(_nxt_tup),nxt_spa(_nxt_spa) {}
 
+	// implement class Recorder::RecNode
+	Recorder::RecNode::RecNode() : p(),tup() {}
+
 	// implementm class Recorder
 	Recorder::Recorder(Manager &_man,TableInfo &_ti) : man(_man),ti(_ti),in_len(0),out_len(0) {
 		pair<size_t,size_t> l = calc_len(ti.def.col_def);
@@ -234,9 +296,36 @@ namespace MeMan {
 	void Recorder::init_table() {
 		ti.path = TABLE_DIR + ti.def.table_name + TABLE_SUF;
 		Block blo = man.buf.get_block(ti.path,0,true);
+		blo.ink();
 		ptr init_ptr(0,0,block_size);
 		blo.seek(0),blo.write(init_ptr);
 		blo.unpin();
+	}
+	void Recorder::remove_table() {
+		man.buf.remove_file(ti.path);
+		remove(ti.path.c_str());
+	}
+	Recorder::RecNode Recorder::header() {
+		Block head = man.buf.get_block(ti.path,0,false);
+		assert(head.data);
+		RecNode ret;
+		head.seek(0),head.read(ret.p);
+		head.unpin();
+		return ret;
+	}
+	Recorder::RecNode Recorder::get_recnode(size_t pt) {
+		size_t seg = pt / block_size;
+		size_t off = pt % block_size;
+		Block the = man.buf.get_block(ti.path,seg,false);
+		assert(the.data);
+		the.seek(off);
+		RecNode ret;
+		the.read(ret.p);
+		size_t siz = ti.def.col_def.size();
+		ret.tup.resize(siz);
+		for (size_t i=0;i<siz;++i) parse(ret.tup[i],ti.def.col_def[i].col_spec.len,the);
+		the.unpin();
+		return ret;
 	}
 	vector<Literal> Recorder::get_record(size_t pt) {
 		size_t seg = pt / block_size;
@@ -296,7 +385,7 @@ namespace MeMan {
 		the.unpin();
 		return pos;
 	}
-	void Recorder::erase_record_at(size_t pt) {
+	vector<Literal> Recorder::erase_record_at(size_t pt) {
 		size_t seg = pt / block_size;
 		size_t off = pt % block_size;
 		Block head = man.buf.get_block(ti.path,0,false);
@@ -308,6 +397,11 @@ namespace MeMan {
 		ptr head_p,the_p;
 		head.seek(0),head.read(head_p);
 		the.seek(off),the.read(the_p);
+
+		// deal return value
+		size_t siz = ti.def.col_def.size();
+		vector<Literal> ret(siz);
+		for (size_t i=0;i<siz;++i) parse(ret[i],ti.def.col_def[i].col_spec.len,the);
 
 		// deal with pre
 		size_t pre_seg = the_p.pre_tup / block_size;
@@ -344,61 +438,57 @@ namespace MeMan {
 		the.raw_fill(0,in_len); // erase the payload
 		head.unpin();
 		the.unpin();
+
+		return ret;
 	}
-	template<typename T> void Recorder::embed(const T &val,size_t len,Block &blo) {
-		throw MeError::MeError(
-			InternalError,
-			"unspecialized Recorder::embed should not be called"
-		);
+
+	// implement class Lister
+	template<class T> Lister<T>::Lister(Manager &_man) :
+		man(_man),num(0),pos(0),do_write(false),path(),blo(man.buf,0,nullptr) {}
+	template<class T> void Lister<T>::init() {
+		num = 0, pos = 0, do_write = false;
+		path = man.tmp.new_tmp();
+		blo.data = nullptr;
 	}
-	template<typename T> void Recorder::parse(T &val,size_t len,Block &blo) {
-		throw MeError::MeError(
-			InternalError,
-			"unspecialized Recorder::parse should not be called"
-		);
+	template<class T> void Lister<T>::start(bool _do_write) {
+		do_write = _do_write;
+		pos = 0;
+		assert(!blo.data);
 	}
-	template<> void Recorder::embed<Literal>(const Literal &val,size_t len,Block &blo) {
-		switch (val.dtype) {
-			case DataType::INT : {
-				assert(len == sizeof (val.int_val));
-				blo.write(val.int_val);
-				break;
-			}
-			case DataType::FLOAT : {
-				assert(len == sizeof (val.float_val));
-				blo.write(val.float_val);
-				break;
-			}
-			case DataType::CHAR : {
-				size_t siz = val.char_val.length();
-				assert(len >= siz);
-				blo.raw_write(val.char_val.c_str(),siz);
-				blo.raw_fill(0,len-siz);
-				break;
-			}
+	template<class T> void Lister<T>::finish() {
+		if (blo.data) blo.unpin(),blo.data = nullptr;
+	}
+	template<class T> void Lister<T>::dest() {
+		assert(!blo.data);
+		man.tmp.ret_tmp(path);
+	}
+	template<class T> void Lister<T>::adjust() {
+		size_t seg = pos / block_size;
+		size_t off = pos % block_size;
+		if (off + sizeof (T) > block_size) {
+			++seg, off = 0;
+			pos = seg * block_size + off;
+			if (blo.data) blo.unpin(),blo.data = nullptr;
+		}
+		if (!blo.data) {
+			blo = man.buf.get_block(path,seg,true);
+			if (do_write) blo.ink();
 		}
 	}
-	template<> void Recorder::parse<Literal>(Literal &val,size_t len,Block &blo) {
-		switch (val.dtype) {
-			case DataType::INT : {
-				assert(len == sizeof (val.int_val));
-				blo.read(val.int_val);
-				break;
-			}
-			case DataType::FLOAT : {
-				assert(len == sizeof (val.float_val));
-				blo.read(val.float_val);
-				break;
-			}
-			case DataType::CHAR : {
-				static char aux[block_size],*r;
-				blo.raw_read(aux,len);
-				for (r=aux+len;r!=aux && *(r-1)==0;--r);
-				val = Literal(string(aux,r));
-				break;
-			}
-		}
+	template<class T> void Lister<T>::push_back(const T &x) {
+		adjust();
+		blo.write(x);
+		pos += sizeof(T);
+		++num;
 	}
+	template<class T> T Lister<T>::pop_front() {
+		adjust();
+		T ret;
+		blo.read(ret);
+		pos += sizeof(T);
+		return ret;
+	}
+
 
 	// implement class Manageri
 	Manager::Manager() : cat(),tmp(*this),buf() {}

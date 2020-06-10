@@ -12,6 +12,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <set>
 #include <iostream>
 #include "../base/base.hpp"
 #include "../config.hpp"
@@ -73,6 +74,8 @@ namespace MeCat {
 	public:
 		TableDef def;
 		string path;
+		set<string> index_on;
+		map<string,col_num_t> name_to_ord;
 
 		TableInfo();
 		TableInfo(const TableDef &_def,const string &_path);
@@ -98,6 +101,10 @@ namespace MeCat {
 		~CatalogManager();
 		void load(); // load catalog into class
 		void dump(); // dump catalog to file
+		TableInfo& create_table_catalog(const string &table_name,const vector<TableColumnDef> &cols,col_num_t pk);
+		void erase_table_catalog(const string &table_name);
+		IndexInfo& create_index_catalog(const string &index_name,const TableInfo &ti,col_num_t ord);
+		void erase_index_catalog(const string &index_name);
 	};
 
 	pair<size_t,size_t> calc_len(const vector<TableColumnDef> &col_def);

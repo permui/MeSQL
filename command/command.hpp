@@ -61,7 +61,7 @@ namespace MeInt {
         DropTableStatement(const string &_table_name);
         string str() const;
         void print() const;
-        void execute();
+        void _execute();
     };
 
     class CreateIndexStatement : public Statement {
@@ -73,7 +73,7 @@ namespace MeInt {
         CreateIndexStatement(const string &_index_name,const string &_table_name,const string &_col_name);
         string str() const;
         void print() const;
-        void execute();
+        void _execute();
     };
 
     class DropIndexStatement : public Statement {
@@ -83,19 +83,20 @@ namespace MeInt {
         DropIndexStatement(const string &_index_name);
         string str() const;
         void print() const;
-        void execute();
+        void _execute();
     };
 
     class SelectStatement : public Statement {
     private:
         string table_name;
         vector<string> proj_cols;
+		vector<col_num_t> projs;
         WhereCond cond;
     public:
         SelectStatement(const string &_table_name,const vector<string> &_proj_cols,const WhereCond &_cond);
         string str() const;
         void print() const;
-        void execute();
+        void _execute();
     };
 
     class InsertStatement : public Statement {
@@ -106,7 +107,7 @@ namespace MeInt {
         InsertStatement(const string &_table_name,const InsertTuples &_tps);
         string str() const;
         void print() const;
-        void execute();
+        void _execute();
     };
 
     class DeleteStatement : public Statement {
@@ -117,7 +118,7 @@ namespace MeInt {
         DeleteStatement(const string &_table_name,const WhereCond &_cond);
         string str() const;
         void print() const;
-        void execute();
+        void _execute();
     };
 
     class ExecfileStatement : public Statement {
@@ -127,18 +128,16 @@ namespace MeInt {
         ExecfileStatement(const string &_file_name);
         string str() const;
         void print() const;
-        void execute();
+        void _execute();
     };
 
 	class ShowTablesStatement : public Statement {
 	private:
-		void _execute();
 	public:
 		ShowTablesStatement();
 		string str() const;
 		void print() const;
 		void _execute();
-		void execute();
 	};
 
 	class ShowIndexesStatement : public Statement {
@@ -147,8 +146,15 @@ namespace MeInt {
 		string str() const;
 		void print() const;
 		void _execute();
-		void execute();
 	};
+
+	// no check is performed in these function
+	void __create_index(Manager &man,const string &index_name,const string &table_name,col_num_t ord);
+	void __drop_index(Manager &man,const string &index_name);
+	Lister<size_t> __do_select(Manager &man,TableInfo &ti,WhereCond &cond,bool logic_and);
+	Lister<size_t> __do_select_with_index(Manager &man,TableInfo &ti,WhereCond &cond,const IndexInfo &di,bool logic_and);
+	Lister<size_t> __do_select_with_brute(Manager &man,TableInfo &ti,WhereCond &cond,bool logic_and);
+	bool check_unique_constraint(Manager &man,TableInfo &ti,vector<Indexer> &ind,Recorder &rec,const InsertTuple &tup);
 }
 
 #endif

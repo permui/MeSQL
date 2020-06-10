@@ -72,6 +72,7 @@ namespace MeMan {
 		TableInfo &ti;
 		size_t in_len;
 		size_t out_len;
+	public:
 		class ptr {
 		public:
 			size_t pre_tup;
@@ -81,19 +82,57 @@ namespace MeMan {
 			ptr();
 			ptr(size_t _pre_tup,size_t _nxt_tup,size_t _nxt_spa);
 		};
-	public:
+
+		class RecNode {
+		public:
+			ptr p;
+			vector<Literal> tup;
+			
+			RecNode();
+		};
+
 		// _ti should be from CatalogManager
 		Recorder(Manager &_man,TableInfo &_ti);
 		size_t next_valid_pos(size_t pos) const;
 		void init_table();
+		void remove_table();
 		// return position in file
+		RecNode header();
+		RecNode get_recnode(size_t pt);
 		vector<Literal> get_record(size_t pt);
 		size_t place_record(const vector<Literal> &rec);
-		void erase_record_at(size_t pt);
+		vector<Literal> erase_record_at(size_t pt);
 		// they will be specialized
 		// just write / read, without any check
 		template<typename T> void embed(const T &val,size_t len,Block &blo);
 		template<typename T> void parse(T &val,size_t len,Block &blo);
+	};
+
+	/* useage : 
+	 *	init() -> start(true) -> finish()
+	 *	       -> start(false)-> finish() -> dest()
+	 */
+	template<class T> class Lister {
+	private:
+		Manager &man;
+	public:
+		size_t num;
+	private:
+		size_t pos;
+		bool do_write;
+		string path;
+		Block blo;
+
+		void adjust();
+	public:
+		Lister(Manager &_man);
+		void init();
+		void start(bool _do_write);
+		void finish();
+		void dest();
+		// assume block_size is enough for T
+		void push_back(const T &x);
+		T pop_front();
 	};
 
 	class Manager {

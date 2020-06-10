@@ -9,6 +9,7 @@
 #include <fstream>
 #include <vector>
 #include <map>
+#include <cassert>
 #include "catalog.hpp"
 #include "../config.hpp"
 
@@ -67,6 +68,46 @@ template<typename T> static void embed_to_stream(vector<T> &vec,ostream &os) {
 	for (T &val:vec) embed_to_stream(val,os);
 }
 
+template<> void parse_from_stream<IndexInfo>(IndexInfo &val,istream &is) {
+	parse_from_stream(val.def.index_name,is);
+	parse_from_stream(val.def.table_name,is);
+	read_from_stream(val.def.col_ord,is);
+	parse_from_stream(val.path,is);
+}
+
+template<> void embed_to_stream<const IndexInfo>(const IndexInfo &val,ostream &os) {
+	embed_to_stream(val.def.index_name,os);
+	embed_to_stream(val.def.table_name,os);
+	write_to_stream(val.def.col_ord,os);
+	embed_to_stream(val.path,os);
+}
+
+template<> void parse_from_stream<TableInfo>(TableInfo &val,istream &is) {
+	parse_from_stream(val.def.table_name,is);
+	parse_from_stream(val.def.col_def,is);
+	read_from_stream(val.def.pk_ord,is);
+	parse_from_stream(val.path,is);
+}
+
+template<> void embed_to_stream<const TableInfo>(const TableInfo &val,ostream &os) {
+	embed_to_stream(val.def.table_name,os);
+	embed_to_stream(val.def.col_def,os);
+	write_to_stream(val.def.pk_ord,os);
+	embed_to_stream(val.path,os);
+}
+
+template<> void parse_from_stream<TableColumnDef>(TableColumnDef &val,istream &is) {
+	read_from_stream(val.ord,is);
+	parse_from_stream(val.col_name,is);
+	read_from_stream(val.col_spec,is);
+}
+
+template<> void embed_to_stream<TableColumnDef>(TableColumnDef &val,ostream &os) {
+	write_to_stream(val.ord,os);
+	embed_to_stream(val.col_name,os);
+	write_to_stream(val.col_spec,os);
+}
+
 template<> void parse_from_stream< map<string,TableInfo> >(map<string,TableInfo> &mp,istream &is) {
 	typename map<string,TableInfo>::size_type len,i;
 	TableInfo ti;
@@ -103,46 +144,6 @@ template<> void embed_to_stream< map<string,IndexInfo> >(map<string,IndexInfo> &
 	typename map<string,IndexInfo>::size_type len = mp.size();
 	write_to_stream(len,os);
 	for (const pair<string,IndexInfo> &pr:mp) embed_to_stream(pr.second,os);
-}
-
-template<> void parse_from_stream<IndexInfo>(IndexInfo &val,istream &is) {
-	parse_from_stream(val.def.index_name,is);
-	parse_from_stream(val.def.table_name,is);
-	read_from_stream(val.def.col_ord,is);
-	parse_from_stream(val.path,is);
-}
-
-template<> void embed_to_stream<IndexInfo>(IndexInfo &val,ostream &os) {
-	embed_to_stream(val.def.index_name,os);
-	embed_to_stream(val.def.table_name,os);
-	write_to_stream(val.def.col_ord,os);
-	embed_to_stream(val.path,os);
-}
-
-template<> void parse_from_stream<TableInfo>(TableInfo &val,istream &is) {
-	parse_from_stream(val.def.table_name,is);
-	parse_from_stream(val.def.col_def,is);
-	read_from_stream(val.def.pk_ord,is);
-	parse_from_stream(val.path,is);
-}
-
-template<> void embed_to_stream<TableInfo>(TableInfo &val,ostream &os) {
-	embed_to_stream(val.def.table_name,os);
-	embed_to_stream(val.def.col_def,os);
-	write_to_stream(val.def.pk_ord,os);
-	embed_to_stream(val.path,os);
-}
-
-template<> void parse_from_stream<TableColumnDef>(TableColumnDef &val,istream &is) {
-	read_from_stream(val.ord,is);
-	parse_from_stream(val.col_name,is);
-	read_from_stream(val.col_spec,is);
-}
-
-template<> void embed_to_stream<TableColumnDef>(TableColumnDef &val,ostream &os) {
-	write_to_stream(val.ord,os);
-	embed_to_stream(val.col_name,os);
-	write_to_stream(val.col_spec,os);
 }
 
 namespace MeCat {
@@ -191,8 +192,8 @@ namespace MeCat {
 		index_name(_index_name),table_name(_table_name),col_ord(_col_ord) {}
 
 	// implement class TableInfo
-	TableInfo::TableInfo() : def(),path() {}
-	TableInfo::TableInfo(const TableDef &_def,const string &_path) : def(_def),path(_path) {}
+	TableInfo::TableInfo() : def(),path(),index_on() {}
+	TableInfo::TableInfo(const TableDef &_def,const string &_path) : def(_def),path(_path),index_on() {}
 	bool TableInfo::fit_tuple(const vector<Literal> &vec) const {
 		size_t len = def.col_def.size();
 		if (len != vec.size()) return false;
@@ -233,8 +234,40 @@ namespace MeCat {
 		delete str;
 		parse_from_stream(tables,ss);
 		parse_from_stream(indexes,ss);
-		for (pair<const string,IndexInfo> &pr:indexes) 
-			pr.second.col = tables.at(pr.second.def.table_name).def.col_def.at(pr.second.def.col_ord);
+		for (pair<const string,IndexInfo> &pr:indexes) {
+			TableInfo &ti = tables.at(pr.second.def.table_name);
+			pr.second.col = ti.def.col_def.at(pr.second.def.col_ord);
+			ti.index_on.insert(pr.second.def.index_name);
+		}
+		for (pair<const string,TableInfo> &pr:tables) {
+			for (const TableColumnDef &def:pr.second.def.col_def) 
+				pr.second.name_to_ord.emplace(def.col_name,def.ord);
+		}
+	}
+	TableInfo& CatalogManager::create_table_catalog(const string &table_name,const vector<TableColumnDef> &cols,col_num_t pk) {
+		TableInfo ti(TableDef(table_name,cols,pk),"");
+		for (const TableColumnDef &def:ti.def.col_def)
+			ti.name_to_ord.emplace(def.col_name,def.ord);
+		auto pr = tables.emplace(table_name,ti);
+		assert(pr.second);
+		return pr.first->second;
+	}
+	void CatalogManager::erase_table_catalog(const string &table_name) {
+		assert(tables.at(table_name).index_on.empty());
+		tables.erase(table_name);
+	}
+	IndexInfo& CatalogManager::create_index_catalog(const string &index_name,const TableInfo &ti,col_num_t ord) {
+		IndexInfo di(IndexDef(index_name,ti.def.table_name,ord),"");
+		di.col = ti.def.col_def.at(ord);
+		IndexInfo &ret = indexes.emplace(index_name,di).first->second;
+		tables.at(ti.def.table_name).index_on.insert(index_name);	
+		return ret;
+	}
+	void CatalogManager::erase_index_catalog(const string &index_name) {
+		assert(indexes.count(index_name) == 1);
+		IndexInfo &di = indexes.at(index_name);
+		tables.at(di.def.table_name).index_on.erase(di.def.index_name);
+		indexes.erase(index_name);
 	}
 
 	pair<size_t,size_t> calc_len(const vector<TableColumnDef> &col_def) {

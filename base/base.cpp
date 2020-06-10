@@ -3,6 +3,7 @@
 #include <iomanip>
 #include <iostream>
 #include <vector>
+#include <cassert>
 #include "base.hpp"
 
 using namespace std;
@@ -86,6 +87,55 @@ namespace MeInfo {
 		return ss.str();
 	}
 
+	bool Literal::operator< (const Literal &b) const {
+		assert(dtype == b.dtype);
+		switch (dtype) {
+			case DataType::INT : return int_val < b.int_val;
+			case DataType::FLOAT : return float_val < b.float_val;
+			case DataType::CHAR : return char_val < b.char_val;
+		}
+		assert(false);
+		return false;
+	}
+	bool Literal::operator== (const Literal &b) const {
+		assert(dtype == b.dtype);
+		switch (dtype) {
+			case DataType::INT : return int_val == b.int_val;
+			case DataType::FLOAT : return float_val == b.float_val;
+			case DataType::CHAR : return char_val == b.char_val;
+		}
+		assert(false);
+		return false;
+	}
+
+	bool Literal::null() const {
+		return dtype == DataType::UNKNOWN;
+	}
+
+	bool CompareOpApply(const Literal &a,CompareOp op,const Literal &b) {
+		assert(op != CompareOp::UNKNOWN);
+		assert(a.dtype == b.dtype);
+		switch (a.dtype) {
+			case DataType::INT : return CompareOpSpec(a.int_val,op,b.int_val);
+			case DataType::FLOAT : return CompareOpSpec(a.float_val,op,b.float_val);
+			case DataType::CHAR : return CompareOpSpec(a.char_val,op,b.char_val);
+		}
+		assert(false);
+		return false;
+	}
+
+	template<typename T> bool CompareOpSpec(const T &a,CompareOp op,const T &b) {
+		switch (op) {
+			case CompareOp::EQ : return a == b;
+			case CompareOp::NE : return a != b;
+			case CompareOp::L  : return a <  b;
+			case CompareOp::G  : return a >  b;
+			case CompareOp::LE : return a <= b;
+			case CompareOp::GE : return a >= b;
+		}
+		return false;
+	}
+
     // implement class WhereCondItem
 	WhereCondItem::WhereCondItem() : col_name(),op(CompareOp::UNKNOWN),lit() {}
     WhereCondItem::WhereCondItem(const string &_col_name,CompareOp _op,const Literal &_lit) :
@@ -98,9 +148,28 @@ namespace MeInfo {
         return ss.str();
     }
 
+	WhereCondOtem::WhereCondOtem(col_num_t _col_ord,CompareOp _op,const Literal &_lit) :
+		col_ord(_col_ord),op(_op),lit(_lit),has_index(false) {}
+
     // implement class WhereCond
-    WhereCond::WhereCond() : items() {}
-    WhereCond::WhereCond(const vector<WhereCondItem> &_items) : items(_items) {}
+    WhereCond::WhereCond() : items(),otems() {}
+    WhereCond::WhereCond(const vector<WhereCondItem> &_items) : items(_items),otems() {}
+
+	bool WhereCond::satisfy(const vector<Literal> &tup,bool logic_and) {
+		if (logic_and) {
+			for (const WhereCondOtem &ot:otems) {
+				bool tmp = CompareOpApply(tup.at(ot.col_ord),ot.op,ot.lit);
+				if (!tmp) return false;
+			}
+			return true;
+		} else { // logic or
+			for (const WhereCondOtem &ot:otems) {
+				bool tmp = CompareOpApply(tup.at(ot.col_ord),ot.op,ot.lit);
+				if (tmp) return true;
+			}
+			return false;
+		}
+	}
 
     string WhereCond::str() const {
         static stringstream ss;

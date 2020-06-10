@@ -239,15 +239,11 @@ create_table_col_type:
             string num = $3;
             bool err = false;
             int tmp = 0;
-            if (num.length() > 3) err = true; else {
-				static stringstream ss;
-				ss.str("");
-                ss << num;
-                ss >> tmp;
-                if (!(1<=tmp && tmp<=255)) err = true;
-            }
+			static stringstream ss;
+			ss.str($3);
+			ss >> tmp;
+			if (ss.fail() || !(1<=tmp && tmp<=255)) err = true;
             if (err) {
-				static stringstream ss;
 				ss.str("");
                 ss << "invalid char() length " << num;
                 error(location(),ss.str());
