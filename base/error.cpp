@@ -8,6 +8,7 @@
 #include <iostream>
 #include <string>
 #include "error.hpp"
+#include "color.hpp"
 
 using namespace std;
 
@@ -22,7 +23,7 @@ namespace MeError {
 	MeError::MeError(const string &_msg) : pre("Error"),msg(_msg) {}
 	MeError::MeError(const string &_pre,const string &_msg) : pre(_pre),msg(_msg) {}
 	string MeError::str() const {
-		return pre.empty() ? msg : (pre + " : " + msg);
+		return pre.empty() ? msg : (colorful(pre,COLOR::red) + " : " + msg);
 	}
 
 }

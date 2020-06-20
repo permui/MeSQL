@@ -24,7 +24,7 @@ namespace MeTime {
 	public:
 		Timer();
 		void start();
-		high_resolution_clock::duration::rep stop();
+		void stop();
 		string str() const;
 		string paren_str() const;
 	};

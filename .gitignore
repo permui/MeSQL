@@ -1,0 +1,6 @@
+testdata/
+interpreter/scanner.cpp
+interpreter/parser.cpp
+interpreter/parser.hpp
+interpreter/*.hh
+ui

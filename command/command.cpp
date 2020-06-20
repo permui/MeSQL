@@ -132,7 +132,8 @@ namespace MeInt {
     }
 
     // implement class DropTableStatement
-    DropTableStatement::DropTableStatement(const string &_table_name) : table_name(_table_name) {}
+    DropTableStatement::DropTableStatement(const string &_table_name,bool _do_if_exists) : 
+		table_name(_table_name),do_if_exists(_do_if_exists) {}
     string DropTableStatement::str() const {
         static stringstream ss;
 		ss.str("");
@@ -144,10 +145,16 @@ namespace MeInt {
         printer << str() << endl;
     }
     void DropTableStatement::_execute() {
-		if (man->cat.tables.count(table_name) == 0) throw MeError::MeError(
-			"Invalid Drop Table Statement",
-			"table '" + table_name + "' not exists"
-		);
+		if (man->cat.tables.count(table_name) == 0) {
+			if (do_if_exists) {
+				printer << "OK 0 table dropped ";
+				return;
+			}
+			throw MeError::MeError(
+				"Invalid Drop Table Statement",
+				"table '" + table_name + "' not exists"
+			);
+		}
 
 		TableInfo &ti = man->cat.tables.at(table_name);
 		
@@ -160,7 +167,7 @@ namespace MeInt {
 		rec.remove_table();
 		man->cat.erase_table_catalog(table_name);
 
-		printer << "OK ";
+		printer << "OK 1 table dropped ";
     }
 
     // implement class CreateIndexStatement
@@ -197,6 +204,10 @@ namespace MeInt {
 			"Invalid Create Index Statement",
 			"column '" + col_name + "' not in table '" + table_name + "'"
 		);
+		if (ti.def.col_def.at(ord).col_spec.is_unique == false) throw MeError::MeError(
+			"Invalid Create Index Statement",
+			"column '" + col_name + "' is not defined as unique"
+		);
 
 		__create_index(*man,index_name,table_name,ord);
 
@@ -204,7 +215,8 @@ namespace MeInt {
     }
 
     // implement class DropIndexStatement
-    DropIndexStatement::DropIndexStatement(const string &_index_name) : index_name(_index_name) {}
+    DropIndexStatement::DropIndexStatement(const string &_index_name,bool _do_if_exists) : 
+		index_name(_index_name),do_if_exists(_do_if_exists) {}
     string DropIndexStatement::str() const {
         static stringstream ss;
 		ss.str("");
@@ -216,19 +228,25 @@ namespace MeInt {
         printer << str() << endl;
     }
     void DropIndexStatement::_execute() {
-		if (man->cat.indexes.count(index_name) == 0) throw MeError::MeError(
-			"Invalid Drop Index Statement",
-			"index '" + index_name + "' not exists"
-		);
+		if (man->cat.indexes.count(index_name) == 0) {
+			if (do_if_exists) {
+				printer << "OK 0 index dropped ";
+				return;
+			}
+			throw MeError::MeError(
+				"Invalid Drop Index Statement",
+				"index '" + index_name + "' not exists"
+			);
+		}
 		
 		__drop_index(*man,index_name);
 
-		printer << "OK ";
+		printer << "OK 1 index dropped ";
     }
 
     // implement class SelectStatement
     SelectStatement::SelectStatement(const string &_table_name,const vector<string> &_proj_cols,const WhereCond &_cond) :
-        table_name(_table_name),proj_cols(_proj_cols),projs(),cond(_cond) {}
+        table_name(_table_name),proj_cols(_proj_cols),projs(),cond(_cond),lim() {}
     string SelectStatement::str() const {
         static stringstream ss;
 		ss.str("");
@@ -243,6 +261,9 @@ namespace MeInt {
     void SelectStatement::print() const {
         printer << str() << endl;
     }
+	void SelectStatement::set_lim(const Literal &_lim) {
+		lim = _lim;
+	}
     void SelectStatement::_execute() {
 		// check table_name
 		if (man->cat.tables.count(table_name) == 0) throw MeError::MeError(
@@ -264,10 +285,10 @@ namespace MeInt {
 			DataType fir = ti.def.col_def.at(ord).col_spec.data_type;
 			DataType sec = item.lit.dtype;
 			// comparability check
-			if (fir != sec) throw MeError::MeError(
+			if (!DataTypeComparable(fir,sec)) throw MeError::MeError(
 				"Invalid Select Statement",
-				"cannot compare column '" + item.col_name + "'(" + DataTypeStr(fir) + ") "
-				"and literal [" + item.lit.str() + "](" + DataTypeStr(sec) + ")"
+				"cannot compare column '" + item.col_name + "' (" + DataTypeStr(fir) + ") "
+				"and literal [" + item.lit.str() + "] (" + DataTypeStr(sec) + ")"
 			);
 			cond.otems.emplace_back(ord,item.op,item.lit);
 		}
@@ -288,6 +309,16 @@ namespace MeInt {
 			}
 		}
 
+		// check lim
+		if (lim.dtype == DataType::FLOAT || lim.dtype == DataType::CHAR) throw MeError::MeError(
+			"Invalid Select Statement",
+			"limit number must be INT"
+		);
+		if (lim.dtype == DataType::INT && lim.int_val < 0) throw MeError::MeError(
+			"Invalid Select Statement",
+			"limit number must be nonnegative"
+		);
+
 		Lister<size_t> l = __do_select(*man,ti,cond,true);
 		if (l.num == 0) {
 			printer << "empty set ";
@@ -304,7 +335,8 @@ namespace MeInt {
 		for (col_num_t c:aux) tcd.emplace_back(ti.def.col_def.at(c));
 		res.init(tcd);
 		l.start(false);
-		for (size_t i=0;i<l.num;++i) {
+		size_t num = lim.null() ? l.num : min(l.num,static_cast<size_t>(lim.int_val));
+		for (size_t i=0;i<num;++i) {
 			size_t pos = l.pop_front();
 			const vector<Literal> &got = rec.get_record(pos);
 			vector<Literal> tup;
@@ -316,6 +348,7 @@ namespace MeInt {
 		vector<pair<size_t,string>> prt_spec;
 		for (col_num_t c:projs) prt_spec.emplace_back(c,"");
 		res.print(printer,prt_spec);
+		res.finish();
     }
 
     // implement class InsertStatement
@@ -342,7 +375,7 @@ namespace MeInt {
 			"table '" + table_name + "' does not exist"
 		);
 		TableInfo &ti = man->cat.tables.at(table_name);
-		for (const InsertTuple &tup:tps) if (!ti.fit_tuple(tup)) throw MeError::MeError(
+		for (InsertTuple &tup:tps) if (!ti.try_to_fit_tuple(tup)) throw MeError::MeError(
 			"Invalid Insert Tuple",
 			"tuple " + tup.str() + " does not fit into this table"
 		);
@@ -352,7 +385,7 @@ namespace MeInt {
 		ind.reserve(ids);
 		for (const string &idx:ti.index_on) {
 			IndexInfo &di = man->cat.indexes.at(idx);
-			ind.emplace_back(di);
+			ind.emplace_back(*man,di);
 		}
 		Recorder rec(*man,ti);
 		for (const InsertTuple &tup:tps) {
@@ -362,7 +395,7 @@ namespace MeInt {
 				"tuple " + tup.str() + " violated at least one uniqueness constraint"
 			);
 		}
-		for (const InsertTuple &tup:tps) {
+		for (InsertTuple &tup:tps) {
 			size_t pos = rec.place_record(tup);
 			for (Indexer &ide:ind) ide.insert_record(tup,pos);
 		}
@@ -416,15 +449,16 @@ namespace MeInt {
 		Lister<size_t> l = __do_select(*man,ti,cond,true);
 		if (l.num > 0) {
 			Recorder rec(*man,ti);
-			vector<Indexer> idn;
-			for (const string &s:ti.index_on) idn.emplace_back(man->cat.indexes.at(s));
+			vector<Indexer*> idn;
+			for (const string &s:ti.index_on) idn.push_back(new Indexer(*man,man->cat.indexes.at(s)));
 			l.start(false);
 			for (size_t i=0;i<l.num;++i) {
 				size_t pos = l.pop_front();
 				vector<Literal> tup = rec.erase_record_at(pos);
-				for (Indexer &ide:idn) ide.delete_record(tup,pos);
+				for (Indexer *ide:idn) ide->delete_record(tup,pos);
 			}
 			l.finish();
+			for (Indexer *ide:idn) delete ide;
 		}
 		l.dest();
 		printer << "OK " << l.num << " rows deleted ";
@@ -504,16 +538,16 @@ namespace MeInt {
 
 		size_t siz = cond.items.size();
 		assert(siz == cond.otems.size());
-		map<col_num_t,const IndexInfo &> h_ind;
+		map<col_num_t,IndexInfo &> h_ind;
 		for (const string &s:ti.index_on) {
-			const IndexInfo &di = man.cat.indexes.at(s);
+			IndexInfo &di = man.cat.indexes.at(s);
 			h_ind.emplace(di.col.ord,di);
 		}
 		for (size_t i=0;i<siz;++i) {
 			WhereCondOtem &ot = cond.otems.at(i);
 			ot.has_index = h_ind.count(ot.col_ord);
 			if (ot.has_index && ot.op == CompareOp::EQ) {
-				const IndexInfo &di = h_ind.at(ot.col_ord);
+				IndexInfo &di = h_ind.at(ot.col_ord);
 				swap(cond.items.front(),cond.items.at(i));
 				swap(cond.otems.front(),cond.otems.at(i));
 				return __do_select_with_index(man,ti,cond,di,logic_and);
@@ -522,7 +556,7 @@ namespace MeInt {
 		for (size_t i=0;i<siz;++i) {
 			WhereCondOtem &ot = cond.otems.at(i);
 			if (ot.has_index && ot.op != CompareOp::NE) {
-				const IndexInfo &di = h_ind.at(ot.col_ord);
+				IndexInfo &di = h_ind.at(ot.col_ord);
 				swap(cond.items.front(),cond.items.at(i));
 				swap(cond.otems.front(),cond.otems.at(i));
 				return __do_select_with_index(man,ti,cond,di,logic_and);
@@ -593,25 +627,4 @@ namespace MeInt {
 		return num == 0;
 	}
 
-	void __create_index(Manager &man,const string &index_name,const string &table_name,col_num_t ord) {
-		TableInfo &ti = man.cat.tables.at(table_name);
-		IndexInfo &di = man.cat.create_index_catalog(index_name,ti,ord);
-		Indexer idn(man,di);
-		idn.init_index();
-
-		// insert record into newly created index
-		Recorder rec(man,ti);
-		Recorder::RecNode r(rec.header());
-		while (r.p.nxt_tup) {
-			size_t pos = r.p.nxt_tup;
-			vector<Literal> val = rec.get_record(pos);
-			idn.insert_record(val,pos);
-		}
-	}
-	void __drop_index(Manager &man,const string &index_name) {
-		IndexInfo di = man.cat.indexes.at(index_name);
-		Indexer idn(man,di);
-		idn.remove_index();
-		man.cat.erase_index_catalog(index_name);
-	}
 }

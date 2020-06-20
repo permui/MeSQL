@@ -93,6 +93,9 @@
 %token SHOW "show"
 %token TABLES "tables"
 %token INDEXES "indexes"
+%token IF "if"
+%token EXISTS "exists"
+%token LIMIT "limit"
 %token <std::string> NUMBER "number"
 %token <std::string> FRACTION "fraction"
 %token <std::string> STRING_LIT "string literal"
@@ -125,6 +128,7 @@
 %type <DropIndexStatement*> drop_index_statement;
 
 %type <SelectStatement*> select_statement;
+%type <SelectStatement*> select_statement_sub;
 %type <std::string> select_proj_col;
 %type <std::vector<string> > select_proj_cols;
 %type <WhereCond> where_condition;
@@ -239,8 +243,7 @@ create_table_col_type:
             string num = $3;
             bool err = false;
             int tmp = 0;
-			static stringstream ss;
-			ss.str($3);
+			stringstream ss($3);
 			ss >> tmp;
 			if (ss.fail() || !(1<=tmp && tmp<=255)) err = true;
             if (err) {
@@ -261,9 +264,13 @@ create_table_pk_def:
 	;
 
 drop_table_statement:
-	"drop" "table" IDENTIFIER
+	"drop" "table" IDENTIFIER "if" "exists"
 		{
-			$$ = new DropTableStatement($3);
+			$$ = new DropTableStatement($3,true);
+		}
+	| "drop" "table" IDENTIFIER
+		{
+			$$ = new DropTableStatement($3,false);
 		}
 	;
 
@@ -275,13 +282,29 @@ create_index_statement:
 	;
 
 drop_index_statement:
-	"drop" "index" IDENTIFIER
+	"drop" "index" IDENTIFIER "if" "exists"
 		{
-			$$ = new DropIndexStatement($3);
+			$$ = new DropIndexStatement($3,true);
+		}
+	| "drop" "index" IDENTIFIER
+		{
+			$$ = new DropIndexStatement($3,false);
 		}
 	;
 
 select_statement:
+	select_statement_sub "limit" literal
+		{
+			$$ = $1;
+			$$->set_lim($3);
+		}
+	| select_statement_sub
+		{
+			$$ = $1;
+		}
+	;
+
+select_statement_sub:
 	"select" select_proj_cols "from" IDENTIFIER
 		{
 			$$ = new SelectStatement($4,$2,WhereCond());
@@ -329,23 +352,23 @@ where_condition_item:
 literal:
 	NUMBER
 		{
-			static stringstream ss;
-			ss.str($1);
+			stringstream ss1;
+			ss1.str($1);
 			int x;
-			ss >> x;
-			if (ss.fail()) {
-				MyError("int number '" + $1 + "' out of range");
+			ss1 >> x;
+			if (ss1.fail()) {
+				MyError("cannot convert '" + $1 + "' to INT");
 				ERROR_RETURN;
 			} else $$ = Literal(x);
 		}
 	| FRACTION
 		{
-			static stringstream ss;
-			ss.str($1);
+			stringstream ss2;
+			ss2.str($1);
 			float x;
-			ss >> x;
-			if (ss.fail()) {
-				MyError("float number '" + $1 + "' out of range");
+			ss2 >> x;
+			if (ss2.fail()) {
+				MyError("cannot convert '" + $1 + "' to FLOAT");
 				ERROR_RETURN;
 			} else $$ = Literal(x);
 		}

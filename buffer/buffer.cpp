@@ -21,7 +21,7 @@ namespace MeBuf {
 
 	// implement class BlockSpec
 	BlockSpec::BlockSpec(const string &_file_path,size_t _ord) : file_path(_file_path),ord(_ord) {
-		reverse(file_path.begin(),file_path.end()); // for fast difference detection for performance
+//		reverse(file_path.begin(),file_path.end()); // for fast difference detection for performance
 		assert(ord < max_block_ord); // so further operation would not cause overflow
 		const pair<size_t,size_t> pr = hash();
 		file_hash = pr.first % hash_table_size;
@@ -107,49 +107,18 @@ namespace MeBuf {
 
 	// implement class Block
 	Block::Block(BufferManager &_buf,buffer_index_t _index,char *_data) : 
-		buf(_buf),index(_index),pos(0),data(_data) {}
+		buf(&_buf),index(_index),pos(0),data(_data) {}
 	void Block::ink() {
-		buf.ink(index);
+		buf->ink(index);
 	}
 	void Block::unpin() {
-		buf.unpin(index);
+		buf->unpin(index);
 	}
 	size_t Block::tell() const {
 		return pos;
 	}
 	void Block::seek(size_t _pos) {
 		pos = _pos;
-	}
-	template<typename T> void Block::write(const T &x) {
-		const size_t siz = sizeof (T);
-		if (siz > block_size || pos + siz > block_size) throw MeError::MeError(
-			InternalError,
-			"Block::write error, pos = " + MeType::to_str(pos) + " siz = " + MeType::to_str(siz)
-		);
-		memcpy(data + pos,&x,siz);
-		pos += siz;
-	}
-	template<typename T> void Block::read(T &x) {
-		const size_t siz = sizeof (T);
-		if (siz > block_size || pos + siz > block_size) throw MeError::MeError(
-			InternalError,
-			"Block::read error, pos = " + MeType::to_str(pos) + " siz = " + MeType::to_str(siz)
-		);
-		memcpy(&x,data + pos,siz);
-		pos += siz;
-	}
-	template<class T> T Block::read() {
-		T ret;
-		read(ret);
-		return ret;
-	}
-	template<class T> void fake() {
-		const size_t siz = sizeof (T);
-		if (siz > block_size || pos + size > block_size) throw MeError::MeError(
-			InternalError,
-			"fake fail, pos = " + MeType::to_str(pos) + " siz = " + MeType::to_str(siz)
-		);
-		pos += siz;
 	}
 	void Block::raw_write(const void *from,size_t len) {
 		if (len > block_size || pos + len > block_size) throw MeError::MeError(
@@ -198,27 +167,20 @@ namespace MeBuf {
 	}
 	size_t BufferManager::read_block(const BlockSpec &bls,char *to) {
 		ifstream f(bls.file_path);
-		if (f.fail()) throw MeError::MeError(
-			InternalError,
-			"cannot open db file '" + bls.file_path + "'"
-		);
 		memset(to,0,block_size);
+		if (f.fail()) return 0;
 		f.seekg(block_size * bls.ord,f.beg);
 		f.read(to,block_size);
 		return f.gcount();
 	}
 	void BufferManager::write_block(const BlockSpec &bls,char *from) {
-		ofstream f(bls.file_path);
-		if (f.fail()) throw MeError::MeError(
-			InternalError,
-			"cannot open db file '" + bls.file_path + "'"
-		);
-		f.seekp(block_size * bls.ord,f.beg);
-		f.write(from,block_size);
-		if (f.fail()) throw MeError::MeError(
-			InternalError,
-			"fail write db file '" + bls.file_path + "'"
-		);
+		FILE *fp = fopen(bls.file_path.c_str(),"r+");
+		if (fp == nullptr) {
+			fp = fopen(bls.file_path.c_str(),"w");
+		}
+		fseek(fp,block_size * bls.ord,SEEK_SET);
+		fwrite(from,1,block_size,fp);
+		fclose(fp);
 	}
 	Block BufferManager::get_block(const string &_file_path,size_t _ord,bool create_if_not_exists) {
 		BlockSpec bls(_file_path,_ord);

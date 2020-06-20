@@ -5,6 +5,7 @@
  * 
  */
 
+#include <iostream>
 #include <sstream>
 #include <fstream>
 #include <vector>
@@ -24,91 +25,91 @@ static size_t file_len(istream &is) {
 	return ret;
 }
 
-template<typename T> static void read_from_stream(T &val,istream &is) {
+template<typename T> static void read_from_stream(T &val,stringstream &is) {
 	is.read((char *)&val,sizeof (val));
 }
 
-template<typename T> static void write_to_stream(T &val,ostream &os) {
+template<typename T> static void write_to_stream(T &val,stringstream &os) {
 	os.write((const char *)&val,sizeof (val));
 }
 
-template<typename T> static void parse_from_stream(T &val,istream &is) {
+template<typename T> static void parse_from_stream(T &val,stringstream &is);/* {
 	cerr << "Template Deduction Error : [original parse_from_stream] should not be called" << endl;
-}
+}*/
 
-template<typename T> static void embed_to_stream(T &val,ostream &os) {
+template<typename T> static void embed_to_stream(T &val,stringstream &os); /*{
 	cerr << "Template Deduction Error : [original embed_to_stream] should not be called" << endl;
-}
+}*/
 
-template<> void parse_from_stream<string>(string &val,istream &is) {
+template<> void parse_from_stream<string>(string &val,stringstream &is) {
 	size_t len;
 	read_from_stream(len,is);
-	char *str = new char[len];
-	is.read(str,len);
+	char *str = new char[len+1];
+	is.read(str,len),str[len] = 0;
 	val.assign(str);
 	delete str;
 }
 
-template<> void embed_to_stream<string>(string &val,ostream &os) {
+template<> void embed_to_stream<const string>(const string &val,stringstream &os) {
 	size_t len = val.length();
 	write_to_stream(len,os);
 	os.write(val.c_str(),len);
 }
 
-template<typename T> static void parse_from_stream(vector<T> &vec,istream &is) {
+template<typename T> static void parse_from_stream(vector<T> &vec,stringstream &is) {
 	typename vector<T>::size_type len;
 	read_from_stream(len,is);
 	vec.resize(len);
 	for (T &val:vec) parse_from_stream(val,is);
 }
 
-template<typename T> static void embed_to_stream(vector<T> &vec,ostream &os) {
+template<typename T> static void embed_to_stream(const vector<T> &vec,stringstream &os) {
 	typename vector<T>::size_type len = vec.size();
 	write_to_stream(len,os);
-	for (T &val:vec) embed_to_stream(val,os);
+	for (const T &val:vec) embed_to_stream(val,os);
 }
 
-template<> void parse_from_stream<IndexInfo>(IndexInfo &val,istream &is) {
+template<> void parse_from_stream<IndexInfo>(IndexInfo &val,stringstream &is) {
 	parse_from_stream(val.def.index_name,is);
 	parse_from_stream(val.def.table_name,is);
 	read_from_stream(val.def.col_ord,is);
 	parse_from_stream(val.path,is);
 }
 
-template<> void embed_to_stream<const IndexInfo>(const IndexInfo &val,ostream &os) {
+template<> void embed_to_stream<const IndexInfo>(const IndexInfo &val,stringstream &os) {
 	embed_to_stream(val.def.index_name,os);
 	embed_to_stream(val.def.table_name,os);
 	write_to_stream(val.def.col_ord,os);
 	embed_to_stream(val.path,os);
 }
 
-template<> void parse_from_stream<TableInfo>(TableInfo &val,istream &is) {
+template<> void parse_from_stream<TableInfo>(TableInfo &val,stringstream &is) {
 	parse_from_stream(val.def.table_name,is);
 	parse_from_stream(val.def.col_def,is);
 	read_from_stream(val.def.pk_ord,is);
 	parse_from_stream(val.path,is);
 }
 
-template<> void embed_to_stream<const TableInfo>(const TableInfo &val,ostream &os) {
+template<> void embed_to_stream<const TableInfo>(const TableInfo &val,stringstream &os) {
 	embed_to_stream(val.def.table_name,os);
 	embed_to_stream(val.def.col_def,os);
 	write_to_stream(val.def.pk_ord,os);
 	embed_to_stream(val.path,os);
 }
 
-template<> void parse_from_stream<TableColumnDef>(TableColumnDef &val,istream &is) {
+template<> void parse_from_stream<TableColumnDef>(TableColumnDef &val,stringstream &is) {
 	read_from_stream(val.ord,is);
 	parse_from_stream(val.col_name,is);
 	read_from_stream(val.col_spec,is);
 }
 
-template<> void embed_to_stream<TableColumnDef>(TableColumnDef &val,ostream &os) {
+template<> void embed_to_stream<const TableColumnDef>(const TableColumnDef &val,stringstream &os) {
 	write_to_stream(val.ord,os);
 	embed_to_stream(val.col_name,os);
 	write_to_stream(val.col_spec,os);
 }
 
-template<> void parse_from_stream< map<string,TableInfo> >(map<string,TableInfo> &mp,istream &is) {
+template<> void parse_from_stream< map<string,TableInfo> >(map<string,TableInfo> &mp,stringstream &is) {
 	typename map<string,TableInfo>::size_type len,i;
 	TableInfo ti;
 	read_from_stream(len,is);
@@ -121,13 +122,13 @@ template<> void parse_from_stream< map<string,TableInfo> >(map<string,TableInfo>
 	}
 }
 
-template<> void embed_to_stream< map<string,TableInfo> >(map<string,TableInfo> &mp,ostream &os) {
+template<> void embed_to_stream< map<string,TableInfo> >(map<string,TableInfo> &mp,stringstream &os) {
 	typename map<string,TableInfo>::size_type len = mp.size();
 	write_to_stream(len,os);
 	for (const pair<string,TableInfo> &pr:mp) embed_to_stream(pr.second,os);
 }
 
-template<> void parse_from_stream< map<string,IndexInfo> >(map<string,IndexInfo> &mp,istream &is) {
+template<> void parse_from_stream< map<string,IndexInfo> >(map<string,IndexInfo> &mp,stringstream &is) {
 	typename map<string,IndexInfo>::size_type len,i;
 	IndexInfo di;
 	read_from_stream(len,is);
@@ -140,7 +141,7 @@ template<> void parse_from_stream< map<string,IndexInfo> >(map<string,IndexInfo>
 	}
 }
 
-template<> void embed_to_stream< map<string,IndexInfo> >(map<string,IndexInfo> &mp,ostream &os) {
+template<> void embed_to_stream< map<string,IndexInfo> >(map<string,IndexInfo> &mp,stringstream &os) {
 	typename map<string,IndexInfo>::size_type len = mp.size();
 	write_to_stream(len,os);
 	for (const pair<string,IndexInfo> &pr:mp) embed_to_stream(pr.second,os);
@@ -156,9 +157,12 @@ namespace MeCat {
     string TableColumnSpec::str() const {
         return "TableColumnSpec::str() is not implemented";
     }
-	bool TableColumnSpec::fit(const Literal &lit) const {
+	bool TableColumnSpec::try_to_fit(Literal &lit) const {
+		if (data_type == DataType::FLOAT && lit.dtype == DataType::INT) {
+			lit = Literal(static_cast<float>(lit.int_val));
+		}
 		if (data_type != lit.dtype) return false;
-		if (data_type == DataType::CHAR) return lit.char_val.length() <= len;
+		if (data_type == DataType::CHAR) return static_cast<int>(lit.char_val.length()) <= len;
 		return true;
 	}
 
@@ -194,10 +198,10 @@ namespace MeCat {
 	// implement class TableInfo
 	TableInfo::TableInfo() : def(),path(),index_on() {}
 	TableInfo::TableInfo(const TableDef &_def,const string &_path) : def(_def),path(_path),index_on() {}
-	bool TableInfo::fit_tuple(const vector<Literal> &vec) const {
+	bool TableInfo::try_to_fit_tuple(vector<Literal> &vec) const {
 		size_t len = def.col_def.size();
 		if (len != vec.size()) return false;
-		for (size_t i=0;i<len;++i) if (!def.col_def[i].col_spec.fit(vec[i])) return false;
+		for (size_t i=0;i<len;++i) if (!def.col_def[i].col_spec.try_to_fit(vec[i])) return false;
 		return true;
 	}
 
@@ -224,13 +228,15 @@ namespace MeCat {
 	}
 	void CatalogManager::load() {
 		static stringstream ss;
+		static string aux;
 		ifstream f(CATA_FILE);
 		if (f.fail()) return; // file not exists, load nothing
 		size_t len = file_len(f);
 		char *str = new char[len];
 		f.read(str,len);
 		f.close();
-		ss.str(str);
+		aux.assign(str,str+len);
+		ss.str(aux);
 		delete str;
 		parse_from_stream(tables,ss);
 		parse_from_stream(indexes,ss);

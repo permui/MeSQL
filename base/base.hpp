@@ -10,6 +10,7 @@
 
 #include <string>
 #include <vector>
+#include <sstream>
 #include <algorithm>
 
 using namespace std;
@@ -27,7 +28,14 @@ namespace MeType {
 	int DataTypeLen(DataType dtype); // if unknown -1
     string DataTypeStr(DataType dtype);
     string CompareOpStr(CompareOp op);
-	template<typename T> string to_str(const T &x);
+    bool DataTypeComparable(DataType fir,DataType sec);
+
+	template<typename T> string to_str(const T &x) {
+		static stringstream ss;
+		ss.str("");
+		ss << x;
+		return ss.str();
+	}
 }
 
 namespace MeInfo {
@@ -101,7 +109,14 @@ namespace MeInfo {
 
 namespace MeGad {
 	
-	template<typename T> bool check_unique(vector<T> vec);
+ 	template<typename T> bool check_unique(vector<T> vec) {
+		size_t siz = vec.size();
+		if (siz <= 1) return true;
+		sort(vec.begin(),vec.end());
+		for (size_t i=0;i+1<siz;++i) if (vec[i] == vec[i+1]) return false;
+		return true;
+	}
+
 
 }
 

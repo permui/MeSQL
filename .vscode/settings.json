@@ -17,6 +17,13 @@
 		"limits": "cpp",
 		"cstring": "cpp",
 		"chrono": "cpp",
-		"valarray": "cpp"
+		"valarray": "cpp",
+		"exception": "cpp",
+		"memory_resource": "cpp",
+		"fstream": "cpp",
+		"new": "cpp",
+		"shared_mutex": "cpp",
+		"streambuf": "cpp",
+		"istream": "cpp"
 	}
 }

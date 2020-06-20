@@ -21,7 +21,7 @@ namespace MeTime {
 	void Timer::start() {
 		fir = high_resolution_clock::now();
 	}
-	high_resolution_clock::duration::rep Timer::stop() {
+	void Timer::stop() {
 		sec = high_resolution_clock::now();
 		dur = sec - fir;
 	}

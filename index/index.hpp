@@ -38,7 +38,6 @@ namespace MeInd {
 		const IndexInfo &di;
 		size_t ptr_size;
 		size_t key_size;
-		size_t node_cnt;
 
 		class empter {
 		public:
@@ -105,6 +104,8 @@ namespace MeInd {
 		void remove_index();
 	};
 
+	void __create_index(Manager &man,const string &index_name,const string &table_name,col_num_t ord);
+	void __drop_index(Manager &man,const string &index_name);
 }
 
 #endif

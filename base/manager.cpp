@@ -59,12 +59,16 @@ namespace MeMan {
 		switch (val.dtype) {
 			case DataType::INT : {
 				assert(len == sizeof (val.int_val));
-				blo.read(val.int_val);
+				int x;
+				blo.read(x);
+				val = Literal(x);
 				break;
 			}
 			case DataType::FLOAT : {
 				assert(len == sizeof (val.float_val));
-				blo.read(val.float_val);
+				float x;
+				blo.read(x);
+				val = Literal(x);
 				break;
 			}
 			case DataType::CHAR : {
@@ -112,7 +116,7 @@ namespace MeMan {
 		col_cnt = col_defs.size();
 		col_width.assign(col_cnt,0);
 		for (size_t i=0;i<col_cnt;++i) {
-			TableColumnDef &def = col_defs[i];
+			TableColumnDef &def = col_defs.at(i);
 			int l = DataTypeLen(def.col_spec.data_type);
 			if (l != -1) def.col_spec.len = l;
 			assert(def.col_spec.len != 0);
@@ -134,7 +138,7 @@ namespace MeMan {
 	void Resulter::add_tuple(const vector<Literal> &tup) {
 		assert(tup.size() == col_cnt);
 		for (size_t i=0;i<col_cnt;++i) {
-			assert(tup[i].dtype == col_defs[i].col_spec.data_type);
+			assert(tup.at(i).dtype == col_defs.at(i).col_spec.data_type);
 			if (tup[i].dtype == DataType::CHAR) 
 				assert(tup[i].char_val.length() <= col_defs[i].col_spec.len);
 		}
@@ -149,13 +153,14 @@ namespace MeMan {
 			for (size_t i=0;i<col_cnt;++i) 
 				col_width[i] = max(col_width[i],(int)col_defs[i].col_name.length());
 			string hor = horizontal_line(col_cnt,col_width);
-			os << hor;
+			os << hor << endl;
 			os << VERT;
 			for (size_t i=0;i<col_cnt;++i) {
 				os << adjust(col_defs[i].col_name,col_width[i]);
 				os << VERT;
 			}
-			os << hor;
+			os << endl;
+			os << hor << endl;
 			for (size_t i=0;i<row_cnt;++i) {
 				os << VERT;
 				for (size_t j=0;j<col_cnt;++j) {
@@ -165,7 +170,7 @@ namespace MeMan {
 				}
 				os << endl;
 			}
-			os << hor;
+			os << hor << endl;
 			os << row_cnt << " rows in result ";
 		} else {
 			os << "empty result ";
@@ -183,13 +188,14 @@ namespace MeMan {
 				_col_width[i] = max(col_width[prt_spec[i].first],(int)prt_spec[i].second.length());
 			}
 			string hor = horizontal_line(_col_cnt,_col_width);
-			os << hor;
+			os << hor << endl;
 			os << VERT;
 			for (size_t i=0;i<_col_cnt;++i) {
 				os << adjust(prt_spec[i].second,_col_width[i]);
 				os << VERT;
 			}
-			os << hor;
+			os << endl;
+			os << hor << endl;
 			static vector<Literal> tmp;
 			tmp.resize(col_cnt);
 			for (size_t i=0;i<row_cnt;++i) {
@@ -201,7 +207,7 @@ namespace MeMan {
 				}
 				os << endl;
 			}
-			os << hor;
+			os << hor << endl;
 			os << row_cnt << " rows in result ";
 		} else {
 			os << "empty result ";
@@ -247,13 +253,13 @@ namespace MeMan {
 		switch (spec.data_type) {
 			case DataType::INT : {
 				int x;
-				memcpy(blo.data + reader_pos,&x,siz);
+				memcpy(&x,blo.data + reader_pos,siz);
 				ret = Literal(x);
 				break;
 			}
 			case DataType::FLOAT : {
 				float x;
-				memcpy(blo.data + reader_pos,&x,siz);
+				memcpy(&x,blo.data + reader_pos,siz);
 				ret = Literal(x);
 				break;
 			}
@@ -323,7 +329,10 @@ namespace MeMan {
 		the.read(ret.p);
 		size_t siz = ti.def.col_def.size();
 		ret.tup.resize(siz);
-		for (size_t i=0;i<siz;++i) parse(ret.tup[i],ti.def.col_def[i].col_spec.len,the);
+		for (size_t i=0;i<siz;++i) {
+			ret.tup.at(i).dtype = ti.def.col_def.at(i).col_spec.data_type;
+			parse(ret.tup.at(i),ti.def.col_def.at(i).col_spec.len,the);
+		}
 		the.unpin();
 		return ret;
 	}
@@ -336,12 +345,15 @@ namespace MeMan {
 		the.fake<ptr>();
 		size_t siz = ti.def.col_def.size();
 		vector<Literal> ret(siz);
-		for (size_t i=0;i<siz;++i) parse(ret[i],ti.def.col_def[i].col_spec.len,the);
+		for (size_t i=0;i<siz;++i) {
+			ret.at(i).dtype = ti.def.col_def.at(i).col_spec.data_type;
+			parse(ret.at(i),ti.def.col_def.at(i).col_spec.len,the);
+		}
 		the.unpin();
 		return ret;
 	}
-	size_t Recorder::place_record(const vector<Literal> &rec) {
-		if (!ti.fit_tuple(rec)) throw MeError::MeError(
+	size_t Recorder::place_record(vector<Literal> &rec) {
+		if (!ti.try_to_fit_tuple(rec)) throw MeError::MeError(
 			InternalError,
 			"Recorder::place_record got unfit tuple"
 		);
@@ -358,7 +370,7 @@ namespace MeMan {
 		the.seek(off),the.read(the_p);
 		if (the_p.nxt_spa == 0) the_p.nxt_spa = next_valid_pos(pos);
 		size_t siz = rec.size();
-		for (size_t i=0;i<siz;++i) embed(rec[i],ti.def.col_def[i].col_spec.len,the);
+		for (size_t i=0;i<siz;++i) embed(rec.at(i),ti.def.col_def.at(i).col_spec.len,the);
 		// adjust nxt_spa
 		head_p.nxt_spa = the_p.nxt_spa;
 		the_p.nxt_spa = 0;
@@ -395,13 +407,15 @@ namespace MeMan {
 		head.ink();
 		the.ink();
 		ptr head_p,the_p;
-		head.seek(0),head.read(head_p);
 		the.seek(off),the.read(the_p);
 
 		// deal return value
 		size_t siz = ti.def.col_def.size();
 		vector<Literal> ret(siz);
-		for (size_t i=0;i<siz;++i) parse(ret[i],ti.def.col_def[i].col_spec.len,the);
+		for (size_t i=0;i<siz;++i) {
+			ret.at(i).dtype = ti.def.col_def.at(i).col_spec.data_type;
+			parse(ret.at(i),ti.def.col_def.at(i).col_spec.len,the);
+		}
 
 		// deal with pre
 		size_t pre_seg = the_p.pre_tup / block_size;
@@ -429,6 +443,7 @@ namespace MeMan {
 			nxt.unpin();
 		}
 
+		head.seek(0),head.read(head_p);
 		the_p.pre_tup = the_p.nxt_tup = 0;
 		the_p.nxt_spa = head_p.nxt_spa;
 		head_p.nxt_spa = pt;
@@ -441,54 +456,6 @@ namespace MeMan {
 
 		return ret;
 	}
-
-	// implement class Lister
-	template<class T> Lister<T>::Lister(Manager &_man) :
-		man(_man),num(0),pos(0),do_write(false),path(),blo(man.buf,0,nullptr) {}
-	template<class T> void Lister<T>::init() {
-		num = 0, pos = 0, do_write = false;
-		path = man.tmp.new_tmp();
-		blo.data = nullptr;
-	}
-	template<class T> void Lister<T>::start(bool _do_write) {
-		do_write = _do_write;
-		pos = 0;
-		assert(!blo.data);
-	}
-	template<class T> void Lister<T>::finish() {
-		if (blo.data) blo.unpin(),blo.data = nullptr;
-	}
-	template<class T> void Lister<T>::dest() {
-		assert(!blo.data);
-		man.tmp.ret_tmp(path);
-	}
-	template<class T> void Lister<T>::adjust() {
-		size_t seg = pos / block_size;
-		size_t off = pos % block_size;
-		if (off + sizeof (T) > block_size) {
-			++seg, off = 0;
-			pos = seg * block_size + off;
-			if (blo.data) blo.unpin(),blo.data = nullptr;
-		}
-		if (!blo.data) {
-			blo = man.buf.get_block(path,seg,true);
-			if (do_write) blo.ink();
-		}
-	}
-	template<class T> void Lister<T>::push_back(const T &x) {
-		adjust();
-		blo.write(x);
-		pos += sizeof(T);
-		++num;
-	}
-	template<class T> T Lister<T>::pop_front() {
-		adjust();
-		T ret;
-		blo.read(ret);
-		pos += sizeof(T);
-		return ret;
-	}
-
 
 	// implement class Manageri
 	Manager::Manager() : cat(),tmp(*this),buf() {}

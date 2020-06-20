@@ -122,7 +122,7 @@ namespace MeInd {
 		empter head = get_empter(0);
 		size_t seg = head.nxt_spa;
 		empter the(seg);
-		Block blo = man.buf.get_block(di.path,head.nxt_spa,true);
+		Block blo = man.buf.get_block(di.path,seg,true);
 		blo.ink();
 		blo.seek(0),blo.read(the.nxt_spa);
 		head.nxt_spa = the.nxt_spa ? the.nxt_spa : (the.seg + 1);
@@ -238,8 +238,10 @@ namespace MeInd {
 
 	void Tree::adjust_two(BNode &now,size_t fir,size_t sec) { // write son
 		assert(fir + 1 == sec);
-		BNode one = noter.get_bnode(fir);
-		BNode two = noter.get_bnode(sec);
+		size_t fir_node = now.P.at(fir);
+		size_t sec_node = now.P.at(sec);
+		BNode one = noter.get_bnode(fir_node);
+		BNode two = noter.get_bnode(sec_node);
 		if (one.is_leaf) {
 			assert(one.P.size() >= 1);
 			one.P.pop_back();
@@ -424,11 +426,33 @@ namespace MeInd {
 		BNode rt = noter.new_bnode();
 		assert(rt.seg == 1);
 		rt.is_leaf = true;
-		rt.P.push_back(0);
 		noter.write_bnode(rt);
 	}
 	void Indexer::remove_index() {
 		man.buf.remove_file(di.path);
 		remove(di.path.c_str());
 	}
+
+	void __create_index(Manager &man,const string &index_name,const string &table_name,col_num_t ord) {
+		TableInfo &ti = man.cat.tables.at(table_name);
+		IndexInfo &di = man.cat.create_index_catalog(index_name,ti,ord);
+		Indexer idn(man,di);
+		idn.init_index();
+
+		// insert record into newly created index
+		Recorder rec(man,ti);
+		Recorder::RecNode r(rec.header());
+		while (r.p.nxt_tup) {
+			size_t pos = r.p.nxt_tup;
+			r = rec.get_recnode(pos);
+			idn.insert_record(r.tup,pos);
+		}
+	}
+	void __drop_index(Manager &man,const string &index_name) {
+		IndexInfo di = man.cat.indexes.at(index_name);
+		Indexer idn(man,di);
+		idn.remove_index();
+		man.cat.erase_index_catalog(index_name);
+	}
+
 }

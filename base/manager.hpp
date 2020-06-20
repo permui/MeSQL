@@ -11,6 +11,7 @@
 #define MANAGER_HPP
 
 #include <string>
+#include <cassert>
 #include "../catalog/catalog.hpp"
 #include "../buffer/buffer.hpp"
 #include "base.hpp"
@@ -100,12 +101,22 @@ namespace MeMan {
 		RecNode header();
 		RecNode get_recnode(size_t pt);
 		vector<Literal> get_record(size_t pt);
-		size_t place_record(const vector<Literal> &rec);
+		size_t place_record(vector<Literal> &rec);
 		vector<Literal> erase_record_at(size_t pt);
 		// they will be specialized
 		// just write / read, without any check
 		template<typename T> void embed(const T &val,size_t len,Block &blo);
 		template<typename T> void parse(T &val,size_t len,Block &blo);
+	};
+
+	class Manager {
+	public:
+		CatalogManager cat;
+		TmpManager tmp;
+		BufferManager buf;
+
+		Manager(); 
+		Resulter new_resulter();
 	};
 
 	/* useage : 
@@ -119,30 +130,60 @@ namespace MeMan {
 		size_t num;
 	private:
 		size_t pos;
+		size_t off;
+		size_t seg;
 		bool do_write;
 		string path;
 		Block blo;
 
-		void adjust();
+		void adjust() {
+			if (off + sizeof (T) > block_size) {
+				++seg, off = 0;
+				pos = seg * block_size + off;
+				if (blo.data) blo.unpin(),blo.data = nullptr;
+			}
+			if (!blo.data) {
+				blo = man.buf.get_block(path,seg,true);
+				if (do_write) blo.ink();
+			}
+		}
 	public:
-		Lister(Manager &_man);
-		void init();
-		void start(bool _do_write);
-		void finish();
-		void dest();
-		// assume block_size is enough for T
-		void push_back(const T &x);
-		T pop_front();
-	};
+		Lister(Manager &_man) :
+			man(_man),num(0),pos(0),off(0),seg(0),do_write(false),path(),blo(man.buf,0,nullptr) {}
+		void init() {
+			num = 0, pos = 0, off = 0, seg = 0;
+			do_write = false;
+			path = man.tmp.new_tmp();
+			blo.data = nullptr;
+		}
+		void start(bool _do_write) {
+			do_write = _do_write;
+			pos = 0, off = 0, seg = 0;
+			assert(!blo.data);
+		}
+		void finish() {
+			if (blo.data) blo.unpin(),blo.data = nullptr;
+		}
+		void dest() {
+			assert(!blo.data);
+			man.tmp.ret_tmp(path);
+		}
+		void push_back(const T &x) {
+			adjust();
+			blo.write(x);
+			pos += sizeof(T);
+			off += sizeof(T);
+			++num;
+		}
+		T pop_front() {
+			adjust();
+			T ret;
+			blo.read(ret);
+			pos += sizeof(T);
+			off += sizeof(T);
+			return ret;
+		}
 
-	class Manager {
-	public:
-		CatalogManager cat;
-		TmpManager tmp;
-		BufferManager buf;
-
-		Manager(); 
-		Resulter new_resulter();
 	};
 
 }

@@ -11,7 +11,9 @@
 #include <string>
 #include <list>
 #include <vector>
+#include <cstring>
 #include "../config.hpp"
+#include "../base/error.hpp"
 
 using namespace std;
 
@@ -76,7 +78,7 @@ namespace MeBuf {
 
 	class Block {
 	private:
-		BufferManager &buf;
+		BufferManager *buf;
 		buffer_index_t index;
 		size_t pos;
 	public:
@@ -88,10 +90,43 @@ namespace MeBuf {
 		void unpin();
 		size_t tell() const;
 		void seek(size_t _pos);
+		template<typename T> void write(const T &x) {
+			const size_t siz = sizeof (T);
+			if (siz > block_size || pos + siz > block_size) throw MeError::MeError(
+				InternalError,
+				"Block::write error, pos = " + MeType::to_str(pos) + " siz = " + MeType::to_str(siz)
+			);
+			memcpy(data + pos,&x,siz);
+			pos += siz;
+		}
+		template<typename T> void read(T &x) {
+			const size_t siz = sizeof (T);
+			if (siz > block_size || pos + siz > block_size) throw MeError::MeError(
+				InternalError,
+				"Block::read error, pos = " + MeType::to_str(pos) + " siz = " + MeType::to_str(siz)
+			);
+			memcpy(&x,data + pos,siz);
+			pos += siz;
+		}
+		template<class T> T read() {
+			T ret;
+			read(ret);
+			return ret;
+		}
+		template<class T> void fake() {
+			const size_t siz = sizeof (T);
+			if (siz > block_size || pos + siz > block_size) throw MeError::MeError(
+				InternalError,
+				"fake fail, pos = " + MeType::to_str(pos) + " siz = " + MeType::to_str(siz)
+			);
+			pos += siz;
+		}
+		/*
 		template<typename T> void write(const T &x);
 		template<typename T> void read(T &x);
 		template<class T> T read();
 		template<class T> void fake();
+		*/
 		void raw_write(const void *from,size_t len);
 		void raw_read(void *to,size_t len);
 		void raw_fill(char c,size_t len);

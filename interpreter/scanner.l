@@ -85,13 +85,19 @@ ICHAR [a-zA-Z0-9_]
 
 "indexes"	{ return MeInt::Parser::make_INDEXES(MeInt::location()); }
 
+"if"		{ return MeInt::Parser::make_IF(MeInt::location()); }
+
+"exists"	{ return MeInt::Parser::make_EXISTS(MeInt::location()); }
+
+"limit"		{ return MeInt::Parser::make_LIMIT(MeInt::location()); }
+
 \"[^ \t\n"]+\"	{ return MeInt::Parser::make_FILENAME(yytext,MeInt::location()); }
 		 
-{DIGIT}+	{ return MeInt::Parser::make_NUMBER(yytext,MeInt::location()); }
+[-+]?{DIGIT}+	{ return MeInt::Parser::make_NUMBER(yytext,MeInt::location()); }
 
 [-+]?(({DIGIT}+\.{DIGIT}*)|(\.{DIGIT}+))	{ return MeInt::Parser::make_FRACTION(yytext,MeInt::location()); }
 
-'.*'		{ return MeInt::Parser::make_STRING_LIT(yytext,MeInt::location()); }
+'[^']*'		{ return MeInt::Parser::make_STRING_LIT(yytext,MeInt::location()); }
 
 [a-zA-Z_]{ICHAR}*	{ return MeInt::Parser::make_IDENTIFIER(yytext,MeInt::location()); }
 
@@ -108,7 +114,7 @@ ICHAR [a-zA-Z0-9_]
 
 ","			{ return MeInt::Parser::make_COMMA(MeInt::location()); }
 
-[\n\t ]		{ }
+[\n\r\t ]		{ }
 
 .			{ 
 				return MeInt::Parser::make_INVALID_CHAR(*yytext,MeInt::location()); 

@@ -34,7 +34,7 @@ namespace MeCat {
 		TableColumnSpec();
         TableColumnSpec(DataType _data_type,char_size_t _len,bool _is_unique,bool _is_primary_key);
         string str() const;
-		bool fit(const Literal &lit) const;
+		bool try_to_fit(Literal &lit) const;
     };
 
     /* Column definition : col_defi = (col_name col_spec) */
@@ -79,7 +79,7 @@ namespace MeCat {
 
 		TableInfo();
 		TableInfo(const TableDef &_def,const string &_path);
-		bool fit_tuple(const vector<Literal> &vec) const;
+		bool try_to_fit_tuple(vector<Literal> &vec) const;
 	};
 
 	class IndexInfo {

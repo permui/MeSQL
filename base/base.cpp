@@ -41,11 +41,11 @@ namespace MeType {
         return "UNDEFINED OPERATOR";
     }
 
-	template<typename T> string to_str(const T &x) {
-		static stringstream ss;
-		ss.str("");
-		ss << x;
-		return ss.str();
+	bool DataTypeComparable(DataType fir,DataType sec) {
+		if (fir == sec) return true;
+		if (fir == DataType::INT && sec == DataType::FLOAT) return true;
+		if (fir == DataType::FLOAT && sec == DataType::INT) return true;
+		return false;
 	}
 
 }
@@ -114,12 +114,20 @@ namespace MeInfo {
 
 	bool CompareOpApply(const Literal &a,CompareOp op,const Literal &b) {
 		assert(op != CompareOp::UNKNOWN);
-		assert(a.dtype == b.dtype);
-		switch (a.dtype) {
-			case DataType::INT : return CompareOpSpec(a.int_val,op,b.int_val);
-			case DataType::FLOAT : return CompareOpSpec(a.float_val,op,b.float_val);
-			case DataType::CHAR : return CompareOpSpec(a.char_val,op,b.char_val);
+		assert(a.dtype != DataType::UNKNOWN);
+		assert(b.dtype != DataType::UNKNOWN);
+		assert(DataTypeComparable(a.dtype,b.dtype));
+		if (a.dtype == b.dtype) {
+			switch (a.dtype) {
+				case DataType::INT : return CompareOpSpec(a.int_val,op,b.int_val);
+				case DataType::FLOAT : return CompareOpSpec(a.float_val,op,b.float_val);
+				case DataType::CHAR : return CompareOpSpec(a.char_val,op,b.char_val);
+			}
 		}
+		if (a.dtype == DataType::FLOAT && b.dtype == DataType::INT)
+			return CompareOpSpec(a.float_val,op,static_cast<float>(b.int_val));
+		if (a.dtype == DataType::INT && b.dtype == DataType::FLOAT)
+			return CompareOpSpec(static_cast<float>(a.int_val),op,b.float_val);
 		assert(false);
 		return false;
 	}
@@ -197,13 +205,5 @@ namespace MeInfo {
 }
 
 namespace MeGad {
-
- 	template<typename T> bool check_unique(vector<T> vec) {
-		size_t siz = vec.size();
-		if (siz <= 1) return true;
-		sort(vec.begin(),vec.end());
-		for (size_t i=0;i+1<siz;++i) if (vec[i] == vec[i+1]) return false;
-		return true;
-	}
 
 }

@@ -10,9 +10,9 @@ const static char bye_str[] = "Bye";
 int main() {
 	stringstream ss;
 	cout << "MeSQL Shell - GCC " << __VERSION__;
-	cout << " (" << __TIMESTAMP__ << ")" << endl << endl;
+	cout << " (" << __TIME__ << " " << __DATE__ << ")" << endl << endl;
 	cout << prompt_str_1;
-	MeMan::Manager man;
+	MeMan::Manager *man = new MeMan::Manager;
 	bool started = false;
 	while (true) {
 		char c = cin.get();
@@ -21,7 +21,7 @@ int main() {
 			started = true;
 			ss << c;
 			if (c==';') {
-				Interpreter a(&ss,&cout,false,man);
+				Interpreter a(&ss,&cout,false,*man);
 				a.clear();
 				a.parse();
 				started = false;
@@ -32,5 +32,10 @@ int main() {
 		if (c=='\n') cout << (started ? prompt_str_2 : prompt_str_1);
 	}
 	cout << bye_str << endl;
+	try {
+		delete man;
+	} catch (MeError::MeError &e) {
+		cout << e.str() << endl;
+	}
 	return 0;
 }

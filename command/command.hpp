@@ -17,6 +17,7 @@
 #include <vector>
 #include "../base/base.hpp"
 #include "../base/manager.hpp"
+#include "../index/index.hpp"
 
 using namespace std;
 
@@ -24,6 +25,7 @@ namespace MeInt {
     using namespace MeType;
     using namespace MeInfo;
 	using namespace MeMan;
+	using namespace MeInd;
 
     /* Base class Statement */
     class Statement {
@@ -37,7 +39,7 @@ namespace MeInt {
         virtual string str() const = 0;
         virtual void print() const = 0;
         virtual void _execute() = 0; // _execute statement and output result to stdout
-		virtual void execute();
+		void execute();
 		void set_manager(Manager *_man);
     };
 
@@ -57,8 +59,9 @@ namespace MeInt {
     class DropTableStatement : public Statement {
     private:
         string table_name;
+        bool do_if_exists;
     public:
-        DropTableStatement(const string &_table_name);
+        DropTableStatement(const string &_table_name,bool _do_if_exists);
         string str() const;
         void print() const;
         void _execute();
@@ -79,8 +82,9 @@ namespace MeInt {
     class DropIndexStatement : public Statement {
     private:
         string index_name;
+        bool do_if_exists;
     public:
-        DropIndexStatement(const string &_index_name);
+        DropIndexStatement(const string &_index_name,bool _do_if_exists);
         string str() const;
         void print() const;
         void _execute();
@@ -92,11 +96,13 @@ namespace MeInt {
         vector<string> proj_cols;
 		vector<col_num_t> projs;
         WhereCond cond;
+        Literal lim;
     public:
         SelectStatement(const string &_table_name,const vector<string> &_proj_cols,const WhereCond &_cond);
         string str() const;
         void print() const;
         void _execute();
+        void set_lim(const Literal &_lim);
     };
 
     class InsertStatement : public Statement {
@@ -149,10 +155,8 @@ namespace MeInt {
 	};
 
 	// no check is performed in these function
-	void __create_index(Manager &man,const string &index_name,const string &table_name,col_num_t ord);
-	void __drop_index(Manager &man,const string &index_name);
 	Lister<size_t> __do_select(Manager &man,TableInfo &ti,WhereCond &cond,bool logic_and);
-	Lister<size_t> __do_select_with_index(Manager &man,TableInfo &ti,WhereCond &cond,const IndexInfo &di,bool logic_and);
+	Lister<size_t> __do_select_with_index(Manager &man,TableInfo &ti,WhereCond &cond,IndexInfo &di,bool logic_and);
 	Lister<size_t> __do_select_with_brute(Manager &man,TableInfo &ti,WhereCond &cond,bool logic_and);
 	bool check_unique_constraint(Manager &man,TableInfo &ti,vector<Indexer> &ind,Recorder &rec,const InsertTuple &tup);
 }
