@@ -534,7 +534,7 @@ namespace MeInt {
 	}
 
 	Lister<size_t> __do_select(Manager &man,TableInfo &ti,WhereCond &cond,bool logic_and) {
-		if (cond.items.empty()) return __do_select_with_brute(man,ti,cond,logic_and);
+		if (cond.items.empty() || logic_and == false) return __do_select_with_brute(man,ti,cond,logic_and);
 
 		size_t siz = cond.items.size();
 		assert(siz == cond.otems.size());

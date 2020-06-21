@@ -134,17 +134,18 @@ namespace MeBuf {
 
 	class BufferManager {
 	private:
-		// unpinned block index list ; for LRU
-		List uplist,uselist;
-		itt list_node[block_num],use_node[block_num];
-		// index pool
-		buffer_index_t pol[block_num];
-		buffer_index_t cur;
-		
-		HashTable h;
-		FileTable f;
+		List uplist; // unpinned index list
+		List uselist; // used index list
+		itt list_node[block_num]; // pointer to uplist node for this index
+		itt use_node[block_num]; // pointer to uselist node for this index
 
-		itt fp[block_num];
+		buffer_index_t pol[block_num]; // index pool
+		buffer_index_t cur; // index pool pointer
+		
+		HashTable h; // file:block -> index
+		FileTable f; // file -> list [indexes of blocks of this file]
+
+		itt fp[block_num]; // pointer to the list node in f for this index
 
 		char m_data[block_num][block_size],aux[block_size];
 

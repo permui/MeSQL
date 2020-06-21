@@ -33,13 +33,9 @@ template<typename T> static void write_to_stream(T &val,stringstream &os) {
 	os.write((const char *)&val,sizeof (val));
 }
 
-template<typename T> static void parse_from_stream(T &val,stringstream &is);/* {
-	cerr << "Template Deduction Error : [original parse_from_stream] should not be called" << endl;
-}*/
+template<typename T> static void parse_from_stream(T &val,stringstream &is);
 
-template<typename T> static void embed_to_stream(T &val,stringstream &os); /*{
-	cerr << "Template Deduction Error : [original embed_to_stream] should not be called" << endl;
-}*/
+template<typename T> static void embed_to_stream(T &val,stringstream &os);
 
 template<> void parse_from_stream<string>(string &val,stringstream &is) {
 	size_t len;

@@ -202,6 +202,7 @@ create_table_statement:
             const string &primary_key = $7; // create_table_pk_def
             $$ = new CreateTableStatement(table_name,cols,primary_key);
         }
+	;
 
 create_table_col_defs:
     create_table_col_def
