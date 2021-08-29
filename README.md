@@ -2,7 +2,7 @@
 
 This is the course project of _**Database System**_ in Zhejiang University, completed independently in my first undergraduate year. The primary aim of this project is to design a basic Database Management System that is **efficient, modular, low coupling and extensible**.
 
-## Some Short Story
+## Some Short Stories
 
 To me, the real highlight of this project is neither the *B+ Tree* nor the *Buffer Manager*, which are straight forward and not hard to implement. The real highlight is the **interpreter**. I spent quite a lot of time learning the [Flex](https://en.wikipedia.org/wiki/Flex_(lexical_analyser_generator)) & [Bison](https://en.wikipedia.org/wiki/GNU_Bison) toolset, since I want the extensibility brought by formal grammar specification. And finally I made it! Here I must express my gratitude to [Chris Narkiewicz](https://github.com/ezaquarii) for [his example](https://github.com/ezaquarii/bison-flex-cpp-example), without which I will never use Flex & Bison with C++ properly (which, in my opinion, is much harder than using them with C). 
 
