@@ -1,6 +1,6 @@
 # MeSQL
 
-This is the course project of _**Database System**_ in Zhejiang University, completed independently in my first undergraduate year. The primary aim of this project is to design a basic Database Management System that is **efficient, modular, low coupling and extensible**.
+This is the course project of _**Database System**_ in Zhejiang University, completed independently in my first undergraduate year. The primary aim of this project is to design a basic Database Management System that is efficient and extensible.
 
 ## Some Short Stories
 
